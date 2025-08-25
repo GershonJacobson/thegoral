@@ -1,0 +1,17 @@
+RewriteEngine On
+RewriteBase /thegoral/
+
+# Hilangkan .php di URL
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^(.*?)/?$ $1.php [NC,L]
+
+# Routing ke campaign.php untuk URL yang tidak dikenali
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)/?$ campaign.php?campaign=$1 [L]
+
+# Redirect ke HTTPS (jika tidak di localhost)
+RewriteCond %{HTTP_HOST} !^localhost [NC]
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
