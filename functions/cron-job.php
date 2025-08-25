@@ -44,17 +44,31 @@ if(mysqli_num_rows($qData) > 0) {
 					$qUpdate = mysqli_query($con, "UPDATE tbl_campaign SET status = 'closed', keep_show = 1 WHERE campaign_id = '" . $countdown['campaignID'] . "'");
 				}
 				
-				$qChkData = mysqli_query($con, "
-					SELECT * FROM tbl_ticket WHERE campaignid_fk = '" . $countdown['campaignID'] . "' ORDER BY rand() LIMIT 1
-				");
-				if(mysqli_num_rows($qChkData) > 0) {
-					$dData = mysqli_fetch_array($qChkData);
-					
-					$ticketID = $dData['ticket_id'];
-					
-					$qSave = mysqli_query($con, "UPDATE tbl_ticket SET win = 'Y' WHERE ticket_id = '" . $ticketID . "'");
-					
-					$qUpdate = mysqli_query($con, "UPDATE tbl_ticket SET win_ticket_id = '" . $ticketID . "' WHERE campaignid_fk = '" . $countdown['campaignID'] . "'");
+				// First, check if a winner has already been selected
+$qCheckWinner = mysqli_query($con, "SELECT * FROM tbl_ticket WHERE campaignid_fk = '" . $countdown['campaignID'] . "' AND win = 'Y'");
+
+if(mysqli_num_rows($qCheckWinner) == 0) { // Only proceed if no winner has been selected
+    $qChkData = mysqli_query($con, "
+        SELECT * FROM tbl_ticket WHERE campaignid_fk = '" . $countdown['campaignID'] . "' ORDER BY rand() LIMIT 1
+    ");
+    if(mysqli_num_rows($qChkData) > 0) {
+        $dData = mysqli_fetch_array($qChkData);
+        
+        $ticketID = $dData['ticket_id'];
+        
+        // Use a transaction to ensure data integrity
+        mysqli_begin_transaction($con);
+
+        try {
+            $qSave = mysqli_query($con, "UPDATE tbl_ticket SET win = 'Y' WHERE ticket_id = '" . $ticketID . "'");
+            $qUpdate = mysqli_query($con, "UPDATE tbl_ticket SET win_ticket_id = '" . $ticketID . "' WHERE campaignid_fk = '" . $countdown['campaignID'] . "'");
+            mysqli_commit($con);
+        } catch (mysqli_sql_exception $exception) {
+            mysqli_rollback($con);
+            throw $exception;
+        }
+    }
+} . "'");
 				}
 			}
 			else {
