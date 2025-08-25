@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Thanks for purchase! - The Goral</title>
+    <style>
+      body {
+        margin: 0;
+      }
+      h1 {
+        color: #2a2f3f;
+        font-family: sans-serif;
+        font-size: 32px;
+        font-style: normal;
+        font-weight: 700;
+        line-height: normal;
+      }
+      h2 {
+        color: #2a2f3f;
+        font-family: sans-serif;
+        font-size: 18px;
+        font-style: normal;
+        font-weight: 700;
+        line-height: normal;
+      }
+      h3 {
+        color: #f29f44;
+        font-family: sans-serif;
+        font-size: 38px;
+        font-style: normal;
+        font-weight: 700;
+        line-height: normal;
+        margin-top: -10px;
+      }
+      h4 {
+        color: #2a2f3f;
+        font-family: sans-serif;
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 600;
+        line-height: normal;
+        margin-top: -30px;
+        margin-bottom: 15px;
+      }
+      span {
+        color: #f29f44;
+        font-family: sans-serif;
+        font-size: 18px;
+        font-style: normal;
+        font-weight: 700;
+        line-height: normal;
+        border: 1px solid #f29f44;
+        padding: 6px 14px;
+        border-radius: 10px;
+        margin-top: -10px;
+      }
+      .container {
+        background: #fff;
+        margin: 0;
+      }
+      .logo {
+        text-align: center;
+        margin-bottom: 20px;
+        margin-top: 20px;
+      }
+      .logo img {
+        width: 250px;
+        height: 55px;
+      }
+      .box {
+        width: 800px;
+        background: #f5f5f5;
+        margin: auto;
+        padding: 50px;
+      }
+      a {
+        color: #000;
+        text-decoration: none;
+      }
+      .card {
+        margin: auto;
+        width: 700px;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 5px 5px 100px 0px rgba(0, 0, 0, 0.15);
+        padding: 30px;
+        color: #000;
+        font-size: 20px;
+        font-family: sans-serif;
+        font-weight: 600;
+        display: flex;
+      }
+      .card img {
+        width: 300px;
+        height: 400px;
+      }
+      .btn {
+        display: flex;
+        justify-content: center;
+        font-size: 22px;
+        font-family: sans-serif;
+        font-weight: 700;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        transition: all 0.2s ease-in-out;
+      }
+      .btn a {
+        text-decoration: none;
+        background: #ec8e37;
+        border-radius: 49.5px;
+        border: 2px solid #f2e7b5;
+        padding: 10px 40px;
+        cursor: pointer;
+        color: #000;
+      }
+      .sosmed {
+        display: flex;
+        margin-top: 15px;
+        justify-content: center;
+      }
+      .sosmed a {
+        text-decoration: none;
+      }
+      .sosmed img {
+        width: 32px;
+        height: 32px;
+        margin-right: 10px;
+        margin-left: 10px;
+      }
+      .col-50 {
+        width: 50%;
+        margin-right: 20px;
+      }
+      @media (max-width: 575px) {
+        h1 {
+          font-size: 12px;
+          margin-top: 10px;
+        }
+        h2 {
+          font-size: 10px;
+          margin-top: 10px;
+        }
+        h3 {
+          font-size: 16px;
+          margin-top: 10px;
+          margin-bottom: 4px;
+        }
+        h4 {
+          font-size: 8px;
+          margin-top: 10px;
+          margin-bottom: 12px;
+        }
+        span {
+          font-size: 9px;
+          padding: 2px 8px;
+          border-radius: 10px;
+        }
+        .box {
+          width: 300px;
+          padding: 20px;
+        }
+
+        .logo img {
+          width: 160px;
+          height: 38px;
+          margin-bottom: 4px;
+          margin-top: 10px;
+        }
+        .card {
+          width: 220px;
+          border-radius: 12px;
+          padding: 40px;
+          font-size: 14px;
+        }
+
+        .btn {
+          font-size: 12px;
+        }
+        .btn a {
+          margin-top: 10px;
+          padding: 4px 15px;
+          color: #000 !important;
+        }
+        .sosmed {
+          margin-top: 10px;
+        }
+        .sosmed img {
+          width: 16px !important;
+          height: 16px !important;
+        }
+        .card img {
+          width: 100px;
+          height: 150px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo">
+        <img src="https://thegoral.com/assets/images/logo_email.png" alt="" />
+      </div>
+      <div class="box">
+        <div class="card">
+          <div class="col-50">
+            <img src="https://thegoral.com/assets/images/illu-8.png" alt="" />
+          </div>
+          <div class="col-50">
+            <span>%campaignName%</span>
+            <h1>Thank you for your purchase!</h1>
+            <h2>Your ticket number is</h2>
+            <h3>%ticketNo%</h3>
+            <h4>Click below to see right away if you won</h4>
+            <div class="btn">
+              <a href="https://thegoral.com/%pageURL%">See If I Won</a>
+            </div>
+
+            <div class="sosmed">
+              <a href="#"
+                ><img src="https://thegoral.com/assets/images/fb.png" alt=""
+              /></a>
+              <a href="#"
+                ><img src="https://thegoral.com/assets/images/ig.png" alt=""
+              /></a>
+              <a href="#"
+                ><img src="https://thegoral.com/assets/images/wa.png" alt=""
+              /></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
