@@ -450,8 +450,6 @@ require("config/session.php");
 				</div>
 				<div class="col-md text-center" style="margin-bottom: 30px">
 					<div class="illus-1">
-						<!-- <img alt="" src="assets/animation/illu-1.png"> -->
-						
 						<lottie-player src="assets/animation/Anim-01.json" background="Transparent" speed="1" loop autoplay></lottie-player>
 					</div>
 				</div>
@@ -537,7 +535,6 @@ require("config/session.php");
 			<div class="row">
 				<div class="col-md">
 					<div class="illus-2 text-center">
-						<!-- <img alt="" src="assets/images/illu-2.png"> -->
 						<lottie-player src="assets/animation/Anim-02.json" background="Transparent" speed="1" loop autoplay></lottie-player>
 					</div>
 				</div>
@@ -672,25 +669,6 @@ require("config/session.php");
 				</div>
 			</div>
 		</div>
-	</div>
-	<div class="section-six text-center">
-		<div class="title">
-			Make your own campaign
-		</div>
-		
-		<?php
-		if($getUserID != "") {
-		?>
-			<button data-toggle="modal" data-target="#createCampaignModal" id="btnGetStarted2" class="btn-get-started">Get Started</button>
-		<?php
-		}
-		else {
-		?>
-			<a href="sign-in" class="btn-get-started" style="text-decoration:none">Get Started</a>
-		<?php
-		}
-		?>
-		
 	</div>
 	<div class="footer">
 		<div class="container">
