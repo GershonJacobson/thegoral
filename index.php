@@ -505,7 +505,6 @@ if ($campaignId) {
         })();
         <?php endif; ?>
 
-        // Checkout Modal Logic
         const checkoutModalEl = document.getElementById('checkoutModal');
         if (checkoutModalEl) {
             const form = document.getElementById('checkoutForm');
@@ -577,7 +576,7 @@ if ($campaignId) {
                         form.reset();
                         firstPurchase?.classList.add('box-bn-active');
                     } else {
-                        Swal.fire({ text: data.message || "An error occurred.", icon: "error" });
+                        Swal.fire({ text: data.message || "An error occurred. Please try again.", icon: "error" });
                     }
                 })
                 .catch(error => {
