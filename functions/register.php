@@ -1,68 +1,74 @@
 <?php
-if(isset( $_SERVER['HTTP_X_REQUESTED_WITH']) && ($_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest')) {
-	require("../config/db.php");
-	require("../config/decrypt.php");
-	
-	include("../PHPMailer/src/PHPMailer.php");
-	include("../PHPMailer/src/SMTP.php");
-	include("../PHPMailer/src/Exception.php");
+require("../config/session.php");
+require("../config/db.php");
+require("../PHPMailer/src/PHPMailer.php");
+require("../PHPMailer/src/SMTP.php");
 
-	$firstName = mysqli_real_escape_string($con, $_POST['firstName']);
-	$lastName = mysqli_real_escape_string($con, $_POST['lastName']);
-	$email = mysqli_real_escape_string($con, $_POST['email']);
-	$phone = mysqli_real_escape_string($con, $_POST['phone']);
-	$password = mysqli_real_escape_string($con, $_POST['password']);
-	$passwordEncrypt = password_hash($password, PASSWORD_DEFAULT);
-	
-	$qChkData = mysqli_query($con, "SELECT * FROM tbl_users WHERE email_address = '" . $email . "'");
-	if(mysqli_num_rows($qChkData) > 0) {
-		$data = array(
-			"result" => "userExisted"
-		);
-	}
-	else {
-		$date_added = date("Y-m-d H:i:s");
-		
-		$confirmationCode = substr(str_shuffle("0123456789abcdefghijklmnopqrstvwxyz"), 0, 30);
-		
-		$qSave = mysqli_query($con, "INSERT INTO tbl_users(first_name, last_name, email_address, phone, password, confirmation_code, date_joined) VALUES('" . $firstName . "', '" . $lastName . "', '" . $email . "', '" . $phone . "', '" . $passwordEncrypt . "', '" . $confirmationCode . "', '$date_added')");
-		
-		define('SMTP_HOST','relay-hosting.secureserver.net');
-		define('SMTP_PORT',25);
-		define('SMTP_USERNAME','noreply@thegoral.com');
-		define('SMTP_PASSWORD','***REMOVED***');
-		define('SMTP_AUTH',false);
+$firstName = $_POST['firstName'];
+$lastName = $_POST['lastName'];
+$emailAddress = $_POST['emailAddress'];
+$password = $_POST['password'];
+$confirmPassword = $_POST['confirmPassword'];
 
-		$firstName = 'The Goral';
-		
-		$email_template = '../confirmation-email-template.html';
-		$message = file_get_contents($email_template);
-		$message = str_replace('%confirmationCode%', $confirmationCode, $message);
+$json = array(
+    'result' => ""
+);
 
-		$mail = new PHPMailer\PHPMailer\PHPMailer();
-		$mail->IsSMTP();                
-		$mail->SMTPAuth = false;
-		$mail->SMTPAutoTLS = false; 		
-		$mail->Host = 'localhost';
-		$mail->Port = 25;
-		$mail->Username = SMTP_USERNAME;
-		$mail->Password = SMTP_PASSWORD;
-		$mail->SetFrom(SMTP_USERNAME,'The Goral');
-		$mail->AddReplyTo(SMTP_USERNAME,"The Goral");
-		$mail->Subject = "Welcome to TheGoral.com";
-		$mail->MsgHTML($message);
-		$mail->AddAddress($email, 'TheGoral.com');
-		$mail->IsHTML(true);
-		$mail->Send();
-		
-		$data = array(
-			"result" => "OK"
-		);
-	}
-	
-	echo json_encode($data);
+if($firstName == "" || $lastName == "" || $emailAddress == "" || $password == "" || $confirmPassword == "") {
+    $json['result'] = "blank";
+} else {
+    // Check if email already exists using prepared statements
+    $checkSql = "SELECT userid_pk FROM tbl_user WHERE email = ?";
+    $checkStmt = mysqli_prepare($con, $checkSql);
+    mysqli_stmt_bind_param($checkStmt, "s", $emailAddress);
+    mysqli_stmt_execute($checkStmt);
+    $checkResult = mysqli_stmt_get_result($checkStmt);
+
+    if(mysqli_num_rows($checkResult) > 0) {
+        $json['result'] = "existed";
+    } else {
+        // Hash the password for secure storage
+        $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+        $status = 0; // Inactive until confirmed
+        $role = 0; // Default user role
+        $token = md5($emailAddress);
+
+        // Insert new user with prepared statements
+        $insertSql = "INSERT INTO tbl_user (firstname, lastname, email, password, role, status, token) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $insertStmt = mysqli_prepare($con, $insertSql);
+        mysqli_stmt_bind_param($insertStmt, "ssssiis", $firstName, $lastName, $emailAddress, $hashedPassword, $role, $status, $token);
+
+        if(mysqli_stmt_execute($insertStmt)) {
+            // --- Email Sending Logic ---
+            $mail = new PHPMailer\PHPMailer\PHPMailer();
+            $mail->IsSMTP();
+            $mail->SMTPDebug = 0;
+            $mail->SMTPAuth = true;
+            $mail->SMTPSecure = 'ssl';
+            $mail->Host = "mail.thegoral.com";
+            $mail->Port = 465;
+            $mail->IsHTML(true);
+            $mail->Username = "support@thegoral.com";
+            $mail->Password = "***REMOVED***";
+            $mail->SetFrom("support@thegoral.com", "The Goral");
+            $mail->Subject = "Confirmation Email";
+            $mailContent = file_get_contents('../confirmation-email-template.html');
+            $mailContent = str_replace("{{TOKEN}}", $token, $mailContent);
+            $mail->MsgHTML($mailContent);
+            $mail->AddAddress($emailAddress);
+
+            if(!$mail->Send()) {
+                // Optional: Log email error
+            }
+
+            $json['result'] = "OK";
+        } else {
+            $json['result'] = "error";
+        }
+        mysqli_stmt_close($insertStmt);
+    }
+    mysqli_stmt_close($checkStmt);
 }
-else {
-	header("Location: 403");
-}
+
+echo json_encode($json);
 ?>

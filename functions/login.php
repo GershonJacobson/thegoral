@@ -1,55 +1,52 @@
 <?php
-if(isset( $_SERVER['HTTP_X_REQUESTED_WITH']) && ($_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest')) {
-	require("../config/db.php");
-	require("../config/decrypt.php");
-	
-	session_start();
-	
-	$email = mysqli_real_escape_string($con, $_POST['email']);
-	$password = mysqli_real_escape_string($con, $_POST['password']);
-	$time = time(); 
-	
-	$qChkData = mysqli_query($con, "SELECT user_id, password, active FROM tbl_users WHERE email_address = '" . $email . "'");
-	if(mysqli_num_rows($qChkData) > 0) {
-		$data = mysqli_fetch_array($qChkData);
-		
-		$hash = $data['password'];
-		
-		if(password_verify($password, $hash)) {
-			if($data['active'] == 0) {
-				$data = array(
-					"result" => "notActive"
-				);
-			}
-			else {
-				$rememberMe = $_POST['rememberMe'];
-				
-				$_SESSION['userGoral'] = $data['user_id'];
-				
-				if($rememberMe == 1) {
-					setcookie("cookielogin[user]", $data['user_id'], $time + (60*60*24*7), "/", "", "", TRUE);
-				}
-				
-				$data = array(
-					"result" => "OK"
-				);
-			}
-		}
-		else {
-			$data = array(
-				"result" => "wrongPassword"
-			);
-		}
-	}
-	else {
-		$data = array(
-			"result" => "emailNotFound"
-		);
-	}
-	
-	echo json_encode($data);
+require("../config/session.php");
+require("../config/db.php");
+
+$emailAddress = $_POST['emailAddress'];
+$password = $_POST['password'];
+
+$json = array(
+    'result' => ""
+);
+
+if($emailAddress == "" || $password == "") {
+    $json['result'] = "blank";
+} else {
+    // Use prepared statements to prevent SQL injection
+    $sql = "SELECT userid_pk, firstname, lastname, email, password, role, status FROM tbl_user WHERE email = ? AND status = 1";
+    $stmt = mysqli_prepare($con, $sql);
+    
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, "s", $emailAddress);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        
+        if(mysqli_num_rows($result) > 0) {
+            $data = mysqli_fetch_array($result);
+            
+            // Securely verify the hashed password
+            if (password_verify($password, $data['password'])) {
+                $_SESSION['goral_user_id'] = $data['userid_pk'];
+                $_SESSION['goral_firstname'] = $data['firstname'];
+                $_SESSION['goral_lastname'] = $data['lastname'];
+                $_SESSION['goral_email'] = $data['email'];
+                $_SESSION['goral_role'] = $data['role'];
+
+                $json['result'] = "OK";
+            } else {
+                // Password does not match
+                $json['result'] = "NOTOK";
+            }
+        } else {
+            // No user found with that email or user is not active
+            $json['result'] = "NOTOK";
+        }
+        mysqli_stmt_close($stmt);
+    } else {
+        // SQL statement preparation failed
+        $json['result'] = "error"; 
+    }
 }
-else {
-	header("Location: 403");
-}
+
+echo json_encode($json);
 ?>
