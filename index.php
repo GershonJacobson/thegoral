@@ -461,12 +461,12 @@ if ($campaignId) {
         </div>
     </div>
 
-    <script src="assets/js/jquery.min.js"></script>
-    <script src="assets/js/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/font/fontawesome/js/all.min.js"></script>
-    <script src="assets/js/jquery.creditCardValidator.js"></script>
-    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
-    <script src="assets/js/sweetalert.min.js"></script>
+    <script src="assets/js/jquery.min.js" defer></script>
+    <script src="assets/js/bootstrap/js/bootstrap.bundle.min.js" defer></script>
+    <script src="assets/font/fontawesome/js/all.min.js" defer></script>
+    <script src="assets/js/jquery.creditCardValidator.js" defer></script>
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js" defer></script>
+    <script src="assets/js/sweetalert.min.js" defer></script>
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -475,7 +475,6 @@ if ($campaignId) {
             const countdownDate = new Date("<?= date('c', strtotime($weeklyCampaign['end_date'])) ?>").getTime();
             const campaignId = <?= (int)$weeklyCampaign['campaign_id'] ?>;
             const countdownEl = document.querySelector('.countdown-' + campaignId);
-            const countdownTqEl = document.getElementById('countdown-tq');
 
             if (!countdownEl) return;
 
@@ -485,18 +484,21 @@ if ($campaignId) {
 
                 if (distance < 0) {
                     countdownEl.innerHTML = "<h4>DRAW COMPLETED</h4>";
+                    const countdownTqEl = document.getElementById('countdown-tq');
                     if(countdownTqEl) countdownTqEl.innerHTML = "<h4>DRAW COMPLETED</h4>";
                     clearInterval(timer);
                     return;
                 }
 
-                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                const days = String(Math.floor(distance / (1000 * 60 * 60 * 24))).padStart(2, '0');
+                const hours = String(Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))).padStart(2, '0');
+                const minutes = String(Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
+                const seconds = String(Math.floor((distance % (1000 * 60)) / 1000)).padStart(2, '0');
 
                 const html = `<div id='tiles'><span>${days}</span><span>${hours}</span><span>${minutes}</span><span>${seconds}</span></div><div class='labels'><li>Days</li><li>Hours</li><li>Mins</li><li>Secs</li></div>`;
                 countdownEl.innerHTML = html;
+                
+                const countdownTqEl = document.getElementById('countdown-tq');
                 if(countdownTqEl) countdownTqEl.innerHTML = html.replace(/tiles/g, 'tiles-tq').replace(/labels/g, 'labels-tq');
 
             }, 1000);
@@ -504,34 +506,28 @@ if ($campaignId) {
         <?php endif; ?>
 
         // Checkout Modal Logic
-        const checkoutModal = document.getElementById('checkoutModal');
-        if (checkoutModal) {
+        const checkoutModalEl = document.getElementById('checkoutModal');
+        if (checkoutModalEl) {
             const form = document.getElementById('checkoutForm');
             const btnBuyTicket = form.querySelector('.btnBuyTicket');
+            const checkoutModal = new bootstrap.Modal(checkoutModalEl);
 
-            // Ticket selection
             document.querySelectorAll('.purchase-amount').forEach(el => {
                 el.addEventListener('click', () => {
                     document.querySelectorAll('.purchase-amount').forEach(i => i.classList.remove('box-bn-active'));
                     el.classList.add('box-bn-active');
-                    
                     const purchase = el.dataset.purchase;
                     const price = el.dataset.price;
-                    
-                    document.getElementById('input-purchase').value = purchase;
-                    document.getElementById('input-price').value = price;
-                    document.querySelector('.total-ticket').textContent = purchase + (purchase === '1' ? ' Ticket' : ' Tickets');
+                    form.inputPurchase.value = purchase;
+                    form.inputPrice.value = price;
+                    document.querySelector('.total-ticket').textContent = `${purchase} Ticket${purchase > 1 ? 's' : ''}`;
                     document.querySelector('.ticket-price').textContent = '$' + parseFloat(price).toFixed(2);
                 });
             });
-             // Default selection
-            const firstPurchaseOption = document.querySelector('.purchase-amount[data-purchase="1"]');
-            if (firstPurchaseOption) {
-                firstPurchaseOption.classList.add('box-bn-active');
-            }
+            
+            const firstPurchase = document.querySelector('.purchase-amount[data-purchase="1"]');
+            if (firstPurchase) firstPurchase.classList.add('box-bn-active');
 
-
-            // Saved card selection
             document.querySelectorAll('.card-list').forEach(button => {
                 button.addEventListener('click', function() {
                     form.cardHolderName.value = this.dataset.cardName || '';
@@ -539,14 +535,12 @@ if ($campaignId) {
                     form.expiry.value = this.dataset.cardExpired || '';
                     form.cvv.value = this.dataset.cardCvv || '';
                     form.zip.value = this.dataset.zip || '';
-                    $('#cardNumber').trigger('input'); // Trigger validation for pre-filled card
+                    $('#cardNumber').trigger('input');
                 });
             });
 
-            // Form submission
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
-                // Simple validation check
                 let isValid = true;
                 form.querySelectorAll('[required]').forEach(input => {
                     if (!input.value.trim()) {
@@ -566,32 +560,29 @@ if ($campaignId) {
 
                 fetch('functions/buy-ticket.php', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': payload.csrf_token },
                     body: JSON.stringify(payload)
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.result === 'OK') {
-                        bootstrap.Modal.getInstance(checkoutModal).hide();
+                        checkoutModal.hide();
                         Swal.fire({
                             width: '800px',
-                            html: `<div class="row"> <div class="col-md-6"> <div class="illus-8"> <img src="assets/images/illu-8.png" alt="" /> </div> </div> <div class="col-md-6"> <div class="row"> <div class="col-md"> <div class="text-tq"> Thanks! <p> Check your email to receive a receipt! <br /> And to see when the raffle will be drawn </p> </div> </div> </div> <div class="row"> <div class="col-md"> <div id="countdown-tq"></div> </div> </div> <div class="row"> <div class="col-md"> <div class="text-ticnum"> Ticket Number <p>${h(data.ticketNo)}</p> </div> </div> </div> <div class="row"> <div class="col-md"> <div class="btn-drawing-page"> <a href="/<?php echo $pageURL; ?>">Go to Drawing Page</a> </div> </div> </div> <div class="row"> <div class="col-md"> <div class="text-raffle">Share This Raffle</div> </div> </div> <div class="row"> <div class="col-md"> <div class="sosmed"> <img src="assets/images/fb.png" alt="" /><img src="assets/images/ig.png" alt="" /><img src="assets/images/wa.png" alt="" /> </div> </div> </div> </div> </div>`,
+                            html: `<div class="row"> <div class="col-md-6"> <div class="illus-8"> <img src="assets/images/illu-8.png" alt="Success Illustration" /> </div> </div> <div class="col-md-6"> <div class="row"> <div class="col-md"> <div class="text-tq"> Thanks! <p> Check your email to receive a receipt! <br /> And to see when the raffle will be drawn </p> </div> </div> </div> <div class="row"> <div class="col-md"> <div id="countdown-tq"></div> </div> </div> <div class="row"> <div class="col-md"> <div class="text-ticnum"> Ticket Number <p>${h(data.ticketNo)}</p> </div> </div> </div> <div class="row"> <div class="col-md"> <div class="btn-drawing-page"> <a href="/<?php echo $weeklyCampaign ? h($weeklyCampaign['page_url']) : ''; ?>">Go to Drawing Page</a> </div> </div> </div> <div class="row"> <div class="col-md"> <div class="text-raffle">Share This Raffle</div> </div> </div> <div class="row"> <div class="col-md"> <div class="sosmed"> <img src="assets/images/fb.png" alt="Facebook" /><img src="assets/images/ig.png" alt="Instagram" /><img src="assets/images/wa.png" alt="WhatsApp" /> </div> </div> </div> </div> </div>`,
                             showConfirmButton: false,
                             allowOutsideClick: false,
                             showCloseButton: true
                         });
                         form.reset();
+                        firstPurchase?.classList.add('box-bn-active');
                     } else {
-                        Swal.fire({
-                            text: data.message || "An error occurred. Please try again.",
-                            icon: "error",
-                            confirmButtonText: "OK",
-                        });
+                        Swal.fire({ text: data.message || "An error occurred.", icon: "error" });
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
-                    Swal.fire({ text: "A network error occurred. Please try again later.", icon: "error" });
+                    console.error('Submission Error:', error);
+                    Swal.fire({ text: "A network error occurred. Please check your connection and try again.", icon: "error" });
                 })
                 .finally(() => {
                     btnBuyTicket.textContent = 'Buy Ticket';
@@ -599,17 +590,21 @@ if ($campaignId) {
                 });
             });
 
-            // Credit Card Validation (using jQuery plugin as it is complex)
             if (window.jQuery && $.fn.validateCreditCard) {
                 $('#cardNumber').on('input', function() {
                     const info = $(this).validateCreditCard();
                     const isValid = !!info.valid;
-                    document.getElementById('cc-valid').value = isValid ? '1' : '0';
-                    document.querySelector('.ccNotValid').classList.toggle('d-none', isValid);
+                    $('#cc-valid').val(isValid ? '1' : '0');
+                    $('.ccNotValid').toggleClass('d-none', isValid);
                 });
             }
         }
+        function h(str) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return str.replace(/[&<>"']/g, m => map[m]);
+        }
     });
     </script>
+
 </body>
 </html>
