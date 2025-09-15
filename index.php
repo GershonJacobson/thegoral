@@ -1,5 +1,5 @@
 <?php
-// index.php (professional, single-file, secure version)
+// index.php (Corrected: Restores Hero Section)
 //
 // Features:
 // - Modern, secure, and performant practices.
@@ -46,7 +46,7 @@ function getCsrfToken(): string {
 // === DATABASE FUNCTIONS (using prepared statements) ===
 
 function getWeeklyCampaign(mysqli $con): ?array {
-    $sql = "SELECT campaign_id, campaign_name, end_date, status FROM tbl_campaign WHERE category = 'weekly' AND status = 'open' LIMIT 1";
+    $sql = "SELECT campaign_id, campaign_name, page_url, end_date, status FROM tbl_campaign WHERE category = 'weekly' AND status = 'open' LIMIT 1";
     $result = $con->query($sql);
     return $result ? $result->fetch_assoc() : null;
 }
@@ -116,6 +116,7 @@ $csrfToken       = getCsrfToken();
 
 $weeklyCampaign = getWeeklyCampaign($con);
 $campaignId     = $weeklyCampaign ? (int)$weeklyCampaign['campaign_id'] : 0;
+$pageURL        = $weeklyCampaign ? $weeklyCampaign['page_url'] : '';
 $participants   = $campaignId ? getParticipantsCount($con, $campaignId) : 0;
 $totalPot       = $campaignId ? getTotalPot($con, $campaignId) : 0.0;
 $lastRaffles    = getLastWeeklyRaffles($con, 5);
@@ -186,7 +187,7 @@ if ($campaignId) {
                 <div class="col-md" style="display:flex;flex-flow:column;align-items:center;">
                     <div class="title-draw" style="color:#fff;">Draw in :</div>
                     <div id="countdown" class="countdown-<?= h($campaignId) ?>">
-                        <div id="tiles"><span>0</span><span>0</span><span>0</span><span>0</span></div>
+                        <div id="tiles"><span>00</span><span>00</span><span>00</span><span>00</span></div>
                         <div class="labels"><li>Days</li><li>Hours</li><li>Mins</li><li>Secs</li></div>
                     </div>
                 </div>
@@ -200,6 +201,13 @@ if ($campaignId) {
                 <?php if ($weeklyCampaign['status'] === 'open'): ?>
                     <button class="btnBuyNow" data-bs-toggle="modal" data-bs-target="#checkoutModal" id="btnBuyNow" data-campaign-id="<?= h($campaignId) ?>" type="button">Buy Ticket Now</button>
                 <?php endif; ?>
+            </div>
+            <?php else: ?>
+            <div class="row">
+                <div class="col text-center" style="padding: 80px 0;">
+                    <h1 class="text-dp" style="color: white;">No Weekly Campaign Running</h1>
+                    <p style="color: white;">Please check back later for the next raffle!</p>
+                </div>
             </div>
             <?php endif; ?>
         </div>
@@ -281,7 +289,7 @@ if ($campaignId) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php $i = 1; foreach ($lastRaffles as $raffle):
+                                    <?php if (!empty($lastRaffles)): $i = 1; foreach ($lastRaffles as $raffle):
                                         $pCount = getParticipantsCount($con, (int)$raffle['campaign_id']);
                                     ?>
                                     <tr style="border-top:1px solid #646464;">
@@ -291,7 +299,9 @@ if ($campaignId) {
                                         <td><span class="text-date"><?= h($pCount) ?></span></td>
                                         <td><div class="text-price">$<?= h(number_format((float)$raffle['pot'], 2)) ?></div></td>
                                     </tr>
-                                    <?php $i++; endforeach; ?>
+                                    <?php $i++; endforeach; else: ?>
+                                    <tr><td colspan="5" class="text-center p-3">No past raffles to display.</td></tr>
+                                    <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -465,7 +475,7 @@ if ($campaignId) {
     <script src="assets/js/bootstrap/js/bootstrap.bundle.min.js" defer></script>
     <script src="assets/font/fontawesome/js/all.min.js" defer></script>
     <script src="assets/js/jquery.creditCardValidator.js" defer></script>
-    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js" defer></script>
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
     <script src="assets/js/sweetalert.min.js" defer></script>
 
     <script>
@@ -568,7 +578,7 @@ if ($campaignId) {
                         checkoutModal.hide();
                         Swal.fire({
                             width: '800px',
-                            html: `<div class="row"> <div class="col-md-6"> <div class="illus-8"> <img src="assets/images/illu-8.png" alt="Success Illustration" /> </div> </div> <div class="col-md-6"> <div class="row"> <div class="col-md"> <div class="text-tq"> Thanks! <p> Check your email to receive a receipt! <br /> And to see when the raffle will be drawn </p> </div> </div> </div> <div class="row"> <div class="col-md"> <div id="countdown-tq"></div> </div> </div> <div class="row"> <div class="col-md"> <div class="text-ticnum"> Ticket Number <p>${h(data.ticketNo)}</p> </div> </div> </div> <div class="row"> <div class="col-md"> <div class="btn-drawing-page"> <a href="/<?php echo $weeklyCampaign ? h($weeklyCampaign['page_url']) : ''; ?>">Go to Drawing Page</a> </div> </div> </div> <div class="row"> <div class="col-md"> <div class="text-raffle">Share This Raffle</div> </div> </div> <div class="row"> <div class="col-md"> <div class="sosmed"> <img src="assets/images/fb.png" alt="Facebook" /><img src="assets/images/ig.png" alt="Instagram" /><img src="assets/images/wa.png" alt="WhatsApp" /> </div> </div> </div> </div> </div>`,
+                            html: `<div class="row"> <div class="col-md-6"> <div class="illus-8"> <img src="assets/images/illu-8.png" alt="Success Illustration" /> </div> </div> <div class="col-md-6"> <div class="row"> <div class="col-md"> <div class="text-tq"> Thanks! <p> Check your email to receive a receipt! <br /> And to see when the raffle will be drawn </p> </div> </div> </div> <div class="row"> <div class="col-md"> <div id="countdown-tq"></div> </div> </div> <div class="row"> <div class="col-md"> <div class="text-ticnum"> Ticket Number <p>${h(data.ticketNo)}</p> </div> </div> </div> <div class="row"> <div class="col-md"> <div class="btn-drawing-page"> <a href="/<?php echo $pageURL; ?>">Go to Drawing Page</a> </div> </div> </div> <div class="row"> <div class="col-md"> <div class="text-raffle">Share This Raffle</div> </div> </div> <div class="row"> <div class="col-md"> <div class="sosmed"> <img src="assets/images/fb.png" alt="Facebook" /><img src="assets/images/ig.png" alt="Instagram" /><img src="assets/images/wa.png" alt="WhatsApp" /> </div> </div> </div> </div> </div>`,
                             showConfirmButton: false,
                             allowOutsideClick: false,
                             showCloseButton: true
