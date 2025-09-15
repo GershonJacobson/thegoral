@@ -1,13 +1,15 @@
+<!-- ✅ Meta & Assets -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="assets/css/sweetalert.min.css">
 <link rel="stylesheet" href="https://unpkg.com/gijgo@1.9.14/css/gijgo.min.css">
 
+<!-- ✅ Move JS to bottom or use defer -->
 <script src="https://unpkg.com/gijgo@1.9.14/js/gijgo.min.js" defer></script>
 <script src="assets/js/sweetalert.min.js" defer></script>
 
 <?php
 // ✅ Initialize session variables safely
-$getUserID       = $getUserID      ?? '';
+$getUserID       = $getUserID       ?? '';
 $getUserRole     = $getUserRole     ?? '';
 $getFirstName    = $getFirstName    ?? '';
 $getLastName     = $getLastName     ?? '';
@@ -54,6 +56,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 
+<!-- ✅ Navbar -->
 <div class="collapse navbar-collapse justify-content-center" id="navbarNav" style="width: 100%;">
     <ul class="navbar-nav">
         <li class="nav-item">
@@ -115,6 +118,7 @@ document.addEventListener("DOMContentLoaded", function () {
     </ul>
 </div>
 
+<!-- ✅ User Dropdown -->
 <div class="collapse navbar-collapse justify-content-end">
     <ul class="navbar-nav">
         <li>
