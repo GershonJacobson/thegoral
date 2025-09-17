@@ -1,5 +1,5 @@
 <?php
-// functions/login.php (Upgraded Version)
+// functions/login.php (Upgraded and Corrected)
 
 declare(strict_types=1);
 error_reporting(E_ALL);
@@ -9,7 +9,6 @@ ini_set('display_errors', '1'); // Good for development, turn off for production
 require("../config/session.php");
 
 // --- 1. CSRF Token Validation (Critical Security Step) ---
-// Terminate the script if the token from the form doesn't match the one in the session.
 if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
     http_response_code(403); // Forbidden
     echo json_encode(['result' => 'error', 'message' => 'Invalid security token.']);
@@ -27,8 +26,8 @@ if(empty($emailAddress) || empty($password)) {
     $json['result'] = "blank";
     $json['message'] = "Email and password cannot be empty.";
 } else {
-    // --- 3. Use Prepared Statements to Find User ---
-    $sql = "SELECT userid_pk, firstname, lastname, email, password, role FROM tbl_user WHERE email = ? AND status = 1";
+    // --- 3. Use Prepared Statements to Find User (CORRECTED SQL) ---
+    $sql = "SELECT userid_pk, firstname, lastname, email, pass, role FROM tbl_user WHERE email = ? AND status = 1";
     $stmt = $con->prepare($sql);
     
     if ($stmt) {
@@ -37,8 +36,8 @@ if(empty($emailAddress) || empty($password)) {
         $result = $stmt->get_result();
         
         if($user = $result->fetch_assoc()) {
-            // --- 4. Securely Verify Password and Set Session ---
-            if (password_verify($password, $user['password'])) {
+            // --- 4. Securely Verify Password and Set Session (CORRECTED KEY) ---
+            if (password_verify($password, $user['pass'])) {
                 // Password is correct, create the session
                 $_SESSION['goral_user_id'] = $user['userid_pk'];
                 $_SESSION['goral_firstname'] = $user['firstname'];

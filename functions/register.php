@@ -1,5 +1,5 @@
 <?php
-// functions/register.php (Upgraded Version)
+// functions/register.php (Upgraded and Corrected)
 
 declare(strict_types=1);
 error_reporting(E_ALL);
@@ -59,7 +59,8 @@ if(empty($firstName) || empty($lastName) || empty($emailAddress) || empty($phone
         $role = 0;   // Standard user role
         $token = md5($emailAddress . time()); // Stronger token
 
-        $insertSql = "INSERT INTO tbl_user (firstname, lastname, email, phone, password, role, status, token) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        // CORRECTED SQL STATEMENT
+        $insertSql = "INSERT INTO tbl_user (firstname, lastname, email, phone, pass, role, status, token) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         $insertStmt = $con->prepare($insertSql);
         $insertStmt->bind_param("sssssiis", $firstName, $lastName, $emailAddress, $phone, $hashedPassword, $role, $status, $token);
 
