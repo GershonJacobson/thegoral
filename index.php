@@ -325,8 +325,6 @@ if ($campaignId) {
             <div class="row">
                 <div class="menu-footer">
                     <a class="active" href="/">Home</a>
-                    <a href="live-campaign">Live Campaigns</a>
-                    <a href="all-campaign">All Campaigns</a>
                 </div>
             </div>
             <div class="row">
