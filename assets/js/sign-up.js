@@ -1,32 +1,30 @@
 $(document).ready(function () {
     // Password strength requirements
-    const PASSWORD_MIN_LENGTH = 8; // Increased from 6 for better security
+    const PASSWORD_MIN_LENGTH = 7; // Matching your PHP requirement
     const PASSWORD_REQUIREMENTS = {
-        minLength: 8,
-        requireUppercase: true,
-        requireLowercase: true,
-        requireNumber: true,
-        requireSpecial: false // Optional but recommended
+        minLength: 7,
+        requireUppercase: false,
+        requireLowercase: false,
+        requireNumber: false,
+        requireSpecial: false
     };
     
-    // Email validation regex - more comprehensive
+    // Email validation regex
     function validateEmail(email) {
         const expr = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
         return expr.test(email);
     }
     
-    // Phone validation - accepts various formats
+    // Phone validation
     function validatePhone(phone) {
-        // Remove all non-digit characters for validation
         const cleanPhone = phone.replace(/\D/g, '');
         
-        // Check if it's 10 digits (US) or between 10-15 (international)
         if (cleanPhone.length === 10) {
-            return cleanPhone; // US number without country code
+            return cleanPhone;
         } else if (cleanPhone.length === 11 && cleanPhone[0] === '1') {
-            return cleanPhone.substring(1); // US number with country code
+            return cleanPhone.substring(1);
         } else if (cleanPhone.length >= 10 && cleanPhone.length <= 15) {
-            return cleanPhone; // International number
+            return cleanPhone;
         }
         return false;
     }
@@ -51,45 +49,22 @@ $(document).ready(function () {
             feedback.push(`At least ${PASSWORD_MIN_LENGTH} characters`);
         }
         
-        if (/[a-z]/.test(password)) {
-            strength++;
-        } else if (PASSWORD_REQUIREMENTS.requireLowercase) {
-            feedback.push("One lowercase letter");
-        }
-        
-        if (/[A-Z]/.test(password)) {
-            strength++;
-        } else if (PASSWORD_REQUIREMENTS.requireUppercase) {
-            feedback.push("One uppercase letter");
-        }
-        
-        if (/[0-9]/.test(password)) {
-            strength++;
-        } else if (PASSWORD_REQUIREMENTS.requireNumber) {
-            feedback.push("One number");
-        }
-        
-        if (/[^a-zA-Z0-9]/.test(password)) {
-            strength++;
-        } else if (PASSWORD_REQUIREMENTS.requireSpecial) {
-            feedback.push("One special character");
-        }
+        if (/[a-z]/.test(password)) strength++;
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[0-9]/.test(password)) strength++;
+        if (/[^a-zA-Z0-9]/.test(password)) strength++;
         
         return {
             score: strength,
             feedback: feedback,
-            isValid: feedback.length === 0 || (password.length >= PASSWORD_MIN_LENGTH && strength >= 3)
+            isValid: password.length >= PASSWORD_MIN_LENGTH
         };
     }
     
-    // Show field error with Bootstrap styling
+    // Show field error
     function showFieldError($field, message) {
         $field.addClass('is-invalid');
-        
-        // Remove existing error message
         $field.siblings('.invalid-feedback').remove();
-        
-        // Add new error message
         $field.after('<div class="invalid-feedback d-block">' + message + '</div>');
     }
     
@@ -111,7 +86,7 @@ $(document).ready(function () {
         }
     }
     
-    // Real-time validation for all fields
+    // Real-time validation for name fields
     $("#firstName, #lastName").on('blur input', function() {
         const $field = $(this);
         const value = $field.val().trim();
@@ -128,7 +103,7 @@ $(document).ready(function () {
         }
     });
     
-    // Email validation on input
+    // Email validation
     $("#email").on('blur input', function() {
         const email = $(this).val().trim();
         
@@ -138,12 +113,10 @@ $(document).ready(function () {
             showFieldError($(this), 'Please enter a valid email address');
         } else {
             showFieldSuccess($(this));
-            // Check if email already exists (optional - requires backend endpoint)
-            // checkEmailAvailability(email);
         }
     });
     
-    // Phone validation on input
+    // Phone validation
     $("#phone").on('blur input', function() {
         const phone = $(this).val().trim();
         
@@ -154,14 +127,13 @@ $(document).ready(function () {
             if (!validPhone) {
                 showFieldError($(this), 'Please enter a valid phone number');
             } else {
-                // Auto-format the phone number
                 $(this).val(formatPhoneNumber(phone));
                 showFieldSuccess($(this));
             }
         }
     });
     
-    // Password strength indicator
+    // Password validation
     $("#password").on('input focus', function() {
         const password = $(this).val();
         const strength = checkPasswordStrength(password);
@@ -170,10 +142,8 @@ $(document).ready(function () {
             clearFieldError($(this));
             $('.password-strength').remove();
         } else {
-            // Remove existing strength indicator
             $('.password-strength').remove();
             
-            // Add strength indicator
             let strengthClass = 'danger';
             let strengthText = 'Weak';
             
@@ -193,7 +163,6 @@ $(document).ready(function () {
             }
         }
         
-        // Check confirm password match if it has value
         const confirmPassword = $("#confirmPassword").val();
         if (confirmPassword !== '') {
             checkPasswordMatch();
@@ -216,9 +185,9 @@ $(document).ready(function () {
     
     $("#confirmPassword").on('input', checkPasswordMatch);
     
-    // Handle Enter key navigation
+    // Enter key navigation
     $("input").on('keypress', function(e) {
-        if (e.which === 13) { // Enter key
+        if (e.which === 13) {
             e.preventDefault();
             const $inputs = $('input:visible');
             const index = $inputs.index(this);
@@ -231,7 +200,7 @@ $(document).ready(function () {
         }
     });
     
-    // Main signup handler
+    // Main signup handler - THIS IS THE CRITICAL PART
     $("#btnSignup").click(function(e) {
         e.preventDefault();
         
@@ -245,15 +214,18 @@ $(document).ready(function () {
         const tosChecked = $('input[name="tos"]').is(':checked');
         const csrfToken = $('input[name="csrf_token"]').val();
         
+        // Debug log
+        console.log("CSRF Token:", csrfToken);
+        console.log("Form data:", { firstName, lastName, email, phone });
+        
         // Clear previous errors
         $('.is-invalid').removeClass('is-invalid');
         $('.invalid-feedback').remove();
         
-        // Validation flags
+        // Validation
         let isValid = true;
         let firstErrorField = null;
         
-        // Validate all fields
         if (firstName === '' || firstName.length < 2) {
             showFieldError($("#firstName"), firstName === '' ? 'First name is required' : 'First name must be at least 2 characters');
             if (!firstErrorField) firstErrorField = $("#firstName");
@@ -286,13 +258,12 @@ $(document).ready(function () {
             isValid = false;
         }
         
-        const passwordStrength = checkPasswordStrength(password);
         if (password === '') {
             showFieldError($("#password"), 'Password is required');
             if (!firstErrorField) firstErrorField = $("#password");
             isValid = false;
-        } else if (!passwordStrength.isValid) {
-            showFieldError($("#password"), 'Password needs: ' + passwordStrength.feedback.join(', '));
+        } else if (password.length < 7) {
+            showFieldError($("#password"), 'Password must be at least 7 characters');
             if (!firstErrorField) firstErrorField = $("#password");
             isValid = false;
         }
@@ -318,12 +289,10 @@ $(document).ready(function () {
             isValid = false;
         }
         
-        // Focus first error field
         if (firstErrorField) {
             firstErrorField.focus();
         }
         
-        // Stop if validation failed
         if (!isValid) {
             return false;
         }
@@ -333,30 +302,35 @@ $(document).ready(function () {
         const originalText = $btn.text();
         $btn.html('<i class="fas fa-spinner fa-spin"></i> Creating your account...').prop('disabled', true);
         
-        // Submit to server
+        // Prepare form data - MATCHING PHP EXACTLY
+        const formData = new FormData();
+        formData.append('firstName', firstName);
+        formData.append('lastName', lastName);
+        formData.append('emailAddress', email);
+        formData.append('phone', validatePhone(phone) || phone);
+        formData.append('password', password);
+        formData.append('confirmPassword', confirmPassword);
+        formData.append('csrf_token', csrfToken);
+        
+        // Submit using FormData instead of JSON
         $.ajax({
-            url: "functions/register.php", // FIXED: Added .php extension
+            url: "functions/register.php",
             type: "POST",
-            data: {
-                firstName: firstName,
-                lastName: lastName,
-                emailAddress: email, // Changed to match backend expectation
-                phone: validatePhone(phone), // Send clean phone number
-                password: password,
-                confirmPassword: confirmPassword,
-                csrf_token: csrfToken // Added CSRF token
-            },
+            data: formData,
+            processData: false,
+            contentType: false,
             dataType: "JSON",
             success: function(response) {
+                console.log("Server response:", response);
+                
                 if (response.result === "OK") {
-                    // Success
                     Swal.fire({
                         title: 'Welcome to The Goral!',
                         html: `
                             <div class="text-center">
                                 <i class="fas fa-check-circle text-success" style="font-size: 48px; margin-bottom: 20px;"></i>
                                 <p>Your account has been created successfully!</p>
-                                <p class="text-muted">Please check your email at <strong>${email}</strong> to verify your account.</p>
+                                <p class="text-muted">You can now log in with your email and password.</p>
                             </div>
                         `,
                         icon: 'success',
@@ -373,8 +347,7 @@ $(document).ready(function () {
                             window.location.href = "/";
                         }
                     });
-                } else if (response.result === "EXISTS") {
-                    // Email already registered
+                } else if (response.result === "existed") {
                     Swal.fire({
                         title: 'Email Already Registered',
                         html: `
@@ -396,7 +369,6 @@ $(document).ready(function () {
                     });
                     $btn.html(originalText).prop('disabled', false);
                 } else {
-                    // Other errors
                     Swal.fire({
                         title: 'Registration Failed',
                         text: response.message || 'An error occurred during registration. Please try again.',
@@ -408,18 +380,16 @@ $(document).ready(function () {
                 }
             },
             error: function(xhr, status, error) {
-                console.error("Registration error:", error);
+                console.error("Registration error:", xhr.responseText);
                 
                 let errorMessage = "Unable to complete registration. ";
                 
                 if (xhr.status === 403) {
-                    errorMessage += "Security verification failed. Please refresh the page and try again.";
+                    errorMessage = "Security verification failed. Please refresh the page and try again.";
                 } else if (xhr.status === 404) {
-                    errorMessage += "Registration service not found. Please contact support.";
+                    errorMessage = "Registration service not found. Please contact support.";
                 } else if (xhr.status === 500) {
-                    errorMessage += "Server error occurred. Please try again later.";
-                } else if (status === "timeout") {
-                    errorMessage += "Request timed out. Please check your connection.";
+                    errorMessage = "Server error occurred. Please check database connection.";
                 } else {
                     errorMessage += "Please check your internet connection and try again.";
                 }
@@ -434,10 +404,9 @@ $(document).ready(function () {
                 
                 $btn.html(originalText).prop('disabled', false);
             },
-            timeout: 30000 // 30 second timeout
+            timeout: 30000
         });
     });
     
-    // Auto-focus first field on load
     $("#firstName").focus();
 });
