@@ -1,8 +1,27 @@
 <?php
-error_reporting(0);
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+date_default_timezone_set("America/New_York");
 session_start();
 
+require("config/db.php");
 require("config/session.php");
+
+// DEBUG
+echo "Connection test: ";
+if($con) {
+    echo "Connected ✓<br>";
+} else {
+    echo "NOT connected ✗<br>";
+}
+
+$test = mysqli_query($con, "SELECT * FROM tbl_campaign LIMIT 1");
+if($test) {
+    echo "Query works ✓<br>";
+    echo "Rows: " . mysqli_num_rows($test) . "<br>";
+} else {
+    echo "Query failed: " . mysqli_error($con) . "<br>";
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
