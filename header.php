@@ -1,3 +1,12 @@
+<?php
+// Initialize variables to prevent undefined warnings
+$color = isset($color) ? $color : '';
+$addActiveHM = isset($addActiveHM) ? $addActiveHM : '';
+$addActiveLC = isset($addActiveLC) ? $addActiveLC : '';
+$addActiveAC = isset($addActiveAC) ? $addActiveAC : '';
+$addActiveDr = isset($addActiveDr) ? $addActiveDr : '';
+$addActiveCt = isset($addActiveCt) ? $addActiveCt : '';
+?>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <link rel="stylesheet" href="assets/css/sweetalert.css" />
 <!-- <link rel="stylesheet" href="assets/css/jquery-ui.css" /> -->

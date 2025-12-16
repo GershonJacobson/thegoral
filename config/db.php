@@ -1,9 +1,7 @@
 <?php
 date_default_timezone_set("America/New_York");
-
-$con = mysqli_connect("localhost","thegoral","hJ8*76220-+1","thegoral");
-
+$con = mysqli_connect("localhost:8889","root","root","thegoral");
 if(mysqli_connect_errno()) {
-	header('Location: 404');
+die("Connection failed: " . mysqli_connect_error());
 }
 ?>
