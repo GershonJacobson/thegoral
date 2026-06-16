@@ -1,0 +1,252 @@
+/* ============================================================
+   The Goral — admin brand layer. Loads AFTER sb-admin-2.css.
+   Same language as the public site: navy ink, gold accents,
+   Syne display + Archivo UI.
+   ============================================================ */
+
+@font-face {
+  font-family: "Archivo";
+  src: url("../../assets/font/Archivo/Archivo-VariableFont_wdth,wght.ttf");
+}
+@font-face {
+  font-family: "Syne";
+  src: url("../../assets/font/Syne/Syne-VariableFont_wght.ttf");
+}
+
+:root {
+  --ga-ink: #182232;
+  --ga-navy-950: #0f1626;
+  --ga-navy-800: #1a2336;
+  --ga-muted: #8a93a3;
+  --ga-line: #e8ecf2;
+  --ga-gold: #ffcc64;
+  --ga-amber: #ec8e37;
+  --ga-gold-dark: #d98b2b;
+}
+
+body {
+  font-family: "Archivo", sans-serif;
+  background-color: #f4f6fa;
+}
+
+/* ---------------- SIDEBAR: navy with gold accents ---------------- */
+.sidebar.bg-gradient-primary {
+  background: linear-gradient(180deg, var(--ga-navy-800) 0%, var(--ga-navy-950) 100%) !important;
+}
+.sidebar .nav-item .nav-link { color: rgba(255, 255, 255, 0.65); }
+.sidebar .nav-item .nav-link i { color: rgba(255, 255, 255, 0.45); }
+.sidebar .nav-item .nav-link span { font-family: "Archivo"; font-weight: 600; }
+.sidebar .nav-item .nav-link:hover,
+.sidebar .nav-item .nav-link:hover i { color: #ffffff; }
+.sidebar .nav-item.active .nav-link,
+.sidebar .nav-item.active .nav-link i { color: var(--ga-gold) !important; }
+.sidebar-divider { border-top-color: rgba(255, 255, 255, 0.12) !important; }
+.sidebar #sidebarToggle { background-color: rgba(255, 255, 255, 0.15); }
+.sidebar #sidebarToggle:hover { background-color: rgba(255, 255, 255, 0.25); }
+
+/* ---------------- TOPBAR: navy band like the public hero ---------------- */
+.topbar.bg-white {
+  background: linear-gradient(90deg, var(--ga-navy-800) 0%, var(--ga-navy-950) 100%) !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.topbar .img-profile { border: 2px solid var(--ga-gold); }
+
+/* ---------------- PAGE HEADINGS ---------------- */
+h1.h3 {
+  font-family: "Syne";
+  font-weight: 700;
+  color: var(--ga-ink) !important;
+}
+.text-server-time, .value-server-time { font-size: 12px; color: var(--ga-muted); }
+.value-server-time { font-weight: 600; }
+
+/* ---------------- STAT CARDS: one accent, not a rainbow ---------------- */
+.card {
+  border: 1px solid var(--ga-line);
+  border-radius: 14px;
+  box-shadow: 0 12px 28px -20px rgba(24, 34, 50, 0.25) !important;
+}
+.card.border-left-primary, .card.border-left-success, .card.border-left-info {
+  border-left: 4px solid var(--ga-gold) !important;
+}
+.card .text-xs {
+  font-family: "Archivo";
+  letter-spacing: 0.12em;
+  color: var(--ga-muted) !important;
+}
+.card .h5 {
+  font-family: "Archivo";
+  font-size: 1.35rem;
+  color: var(--ga-ink) !important;
+}
+.card .fa-2x { color: #d8deea !important; }
+
+.card-header {
+  background-color: #fafbfd !important;
+  border-bottom: 1px solid var(--ga-line) !important;
+  border-radius: 14px 14px 0 0 !important;
+}
+.card-header h6 {
+  font-family: "Archivo";
+  font-size: 12px;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ga-muted) !important;
+}
+
+/* ---------------- DASHBOARD CAMPAIGN ROWS ---------------- */
+.card-info {
+  background: #ffffff;
+  border: 1px solid var(--ga-line);
+  border-radius: 12px;
+  padding: 16px 18px;
+  position: relative;
+}
+.card-info a { color: #303a4d; text-decoration: none; font-size: 14px; }
+.card-info a:hover { color: var(--ga-gold-dark); }
+.card-info .user-icon img { width: 30px; height: 30px; margin-right: 8px; }
+.text-info-ds { align-items: center; }
+
+/* Account list rows */
+.card-info-edit {
+  background: #ffffff;
+  border: 1px solid var(--ga-line) !important;
+  border-radius: 12px !important;
+  padding: 12px 16px !important;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+.card-info-edit:hover { background: #f6f8fb; border-color: #d7deea !important; }
+.card-info-edit .user-icon img { width: 28px; height: 28px; margin-right: 10px; }
+.card-info-edit .account-sub {
+  display: inline-block;
+  margin-left: 12px;
+  font-size: 12.5px;
+  color: var(--ga-muted);
+}
+
+/* Account modal: slim section labels + calm payment table */
+.modal-title { font-size: 18px !important; }
+.title-profile {
+  font-family: "Archivo" !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ga-muted) !important;
+}
+.tbl-payment-history th {
+  background-color: #fafbfd !important;
+  color: var(--ga-muted) !important;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--ga-line);
+}
+.tbl-payment-history tr:nth-child(even) { background-color: #ffffff !important; }
+.tbl-payment-history tr:hover { background-color: #f6f8fb !important; }
+.tbl-payment-history td { border-bottom: 1px solid #f0f2f6; color: #3a4456; }
+
+/* Participants modal */
+.participant-row {
+  display: block;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  background: #ffffff;
+  border: 1px solid var(--ga-line);
+  border-radius: 12px;
+  text-decoration: none !important;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+.participant-row:hover { background: #f6f8fb; border-color: #d7deea; }
+.participant-name { font-family: "Archivo"; font-weight: 700; font-size: 14.5px; color: var(--ga-ink); }
+.participant-contact { font-size: 12.5px; color: var(--ga-muted); margin-top: 1px; }
+.participant-purchase { font-size: 12.5px; color: #5a6372; margin-top: 4px; }
+.participant-loading { padding: 18px; text-align: center; color: var(--ga-muted); font-size: 13.5px; }
+#participantsModal .modal-body { max-height: 80vh; }
+#participantsList { max-height: 46vh; overflow-y: auto; }
+
+/* Search box */
+#search {
+  font-family: "Archivo";
+  font-size: 14px;
+  border: 1px solid #dbe1ea !important;
+  border-radius: 10px !important;
+  padding: 11px 14px !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+#search:focus {
+  outline: none;
+  border-color: var(--ga-gold) !important;
+  box-shadow: 0 0 0 3px rgba(236, 142, 55, 0.16);
+}
+
+/* ---------------- BUTTONS / DROPDOWNS ---------------- */
+.btn-filter {
+  font-family: "Archivo";
+  font-size: 13px !important;
+  font-weight: 600;
+  color: #46536b !important;
+  background: #ffffff !important;
+  border: 1px solid #dbe1ea !important;
+  border-radius: 999px !important;
+  padding: 6px 16px !important;
+}
+.btn-filter:hover { border-color: var(--ga-gold) !important; color: var(--ga-ink) !important; }
+.dropdown-menu { border: 1px solid var(--ga-line); border-radius: 12px; }
+.dropdown-menu li { padding: 2px 6px; }
+.label-radio label { font-family: "Archivo"; font-size: 13px; }
+.input-radio input { accent-color: var(--ga-amber); }
+
+/* ---------------- TABLES ---------------- */
+.tbl-weekly-raffless { width: 100%; }
+.tbl-weekly-raffless thead tr,
+.tbl-weekly-raffless thead th { background: #fafbfd !important; color: var(--ga-muted) !important; }
+.tbl-weekly-raffless th {
+  font-family: "Archivo";
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ga-muted);
+  border-bottom: 1px solid var(--ga-line);
+  padding: 10px 8px;
+  text-align: center;
+}
+.tbl-weekly-raffless td {
+  font-family: "Archivo";
+  font-size: 14px;
+  color: #3a4456;
+  padding: 12px 8px;
+  border-bottom: 1px solid #f0f2f6;
+}
+.tbl-weekly-raffless a { color: #3a4456; text-decoration: none; }
+.tbl-weekly-raffless a:hover { color: var(--ga-gold-dark); }
+.pay-option-text { font-weight: 600; color: var(--ga-gold-dark); display: block; margin-bottom: 4px; }
+
+.load-more, .load-more-raffle { color: var(--ga-muted); cursor: pointer; }
+
+/* ---------------- MODALS / FORMS ---------------- */
+.modal-content { border: 0; border-radius: 16px; }
+.text-label p { overflow-wrap: anywhere; margin-bottom: 8px; }
+.text-label span { font-size: 12px; color: var(--ga-muted); }
+#btnEditProfile,
+.btn-primary {
+  background: linear-gradient(180deg, var(--ga-gold) 0%, var(--ga-amber) 100%) !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  color: #554348 !important;
+  font-weight: 700;
+  padding: 8px 20px !important;
+}
+.form-control { font-family: "Archivo"; font-size: 14px; border-radius: 10px; border-color: #dbe1ea; }
+.form-control:focus { border-color: var(--ga-gold); box-shadow: 0 0 0 3px rgba(236, 142, 55, 0.16); }
+
+/* ---------------- FOOTER ---------------- */
+footer.sticky-footer {
+  background: #ffffff;
+  border-top: 1px solid var(--ga-line);
+}
+footer.sticky-footer .copyright { font-family: "Archivo"; font-size: 12.5px; color: var(--ga-muted); }

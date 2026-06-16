@@ -4,6 +4,11 @@ session_start();
 
 require("../config/session.php");
 
+// Delegate access is parked for the single-weekly MVP — the owner runs the
+// CRM alone. Remove this redirect to bring the page back.
+header("Location: /admin");
+exit;
+
 if($getUserRole == 1) {
 ?>
 <!DOCTYPE html>
@@ -133,7 +138,7 @@ if($getUserRole == 1) {
                   <span
                     class="mr-2 d-none d-lg-inline text-gray-600 small"
                     style="color: #fff !important"
-                    ><?php echo $getFirstName." ".$getLastName; ?></span
+                    ><?php echo htmlspecialchars($getFirstName." ".$getLastName, ENT_QUOTES, 'UTF-8'); ?></span
                   >
                   <img
                     class="img-profile rounded-circle"
@@ -444,7 +449,7 @@ if($getUserRole == 1) {
     </div>
     <!-- End of Page Wrapper -->
     <!-- Custom scripts for all pages-->
-    <script src="js/sb-admin-2.min.js"></script>
+    <script src="/admin/js/sb-admin-2.min.js"></script>
   </body>
 </html>
 <?php

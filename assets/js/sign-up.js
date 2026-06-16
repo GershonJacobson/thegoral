@@ -19,7 +19,8 @@ $(document).ready(function () {
     $("#email, #phone, #password, #confirmPassword").bind("keyup change", function() {
         var email = $("#email").val();
         var phone = $("#phone").val();
-        var filter = /^\d*(?:\.\d{1,2})?$/;
+        // 7-15 digits, allowing +, spaces, dots, dashes and parentheses
+        var filter = /^(?=(?:\D*\d){7,15}\D*$)[+\d\s().-]+$/;
         var password = $("#password").val();
         var confirmPassword = $("#confirmPassword").val();
 
@@ -72,7 +73,7 @@ $(document).ready(function () {
         var phone = $("#phone").val().trim();
         var password = $("#password").val();
         var confirmPassword = $("#confirmPassword").val();
-        var filter = /^\d*(?:\.\d{1,2})?$/;
+        var filter = /^(?=(?:\D*\d){7,15}\D*$)[+\d\s().-]+$/;
 
         // Validate all fields are filled
         if(firstName == "" || lastName == "" || email == "" || phone == "" || password == "" || confirmPassword == "") {
@@ -89,6 +90,18 @@ $(document).ready(function () {
             } else if(confirmPassword == "") {
                 $("#confirmPassword").focus();
             }
+            return;
+        }
+
+        // Names must look like names — winners are announced publicly by name.
+        var nameRule = /^\p{L}[\p{L} .'-]{0,48}\p{L}$/u;
+        if(!nameRule.test(firstName) || !nameRule.test(lastName)) {
+            Swal.fire({
+                icon: "error",
+                title: "Real Name Required",
+                text: "Please enter your real first and last name — winners are announced by name."
+            });
+            $(!nameRule.test(firstName) ? "#firstName" : "#lastName").focus();
             return;
         }
 
@@ -177,6 +190,12 @@ $(document).ready(function () {
                         icon: "error",
                         title: "Email Already Registered",
                         text: "This email address is already registered. Please use a different email or try logging in."
+                    });
+                } else if(response.result == "invalidName") {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Real Name Required",
+                        text: "Please enter your real first and last name — winners are announced by name."
                     });
                 } else if(response.result == "invalidEmail") {
                     Swal.fire({

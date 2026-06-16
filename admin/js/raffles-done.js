@@ -406,6 +406,7 @@ $(document).ready(function () {
 								var weeklyNo = jsonStr[i].weeklyNo;
 								var status = jsonStr[i].status;
 								var totalPrice = "$" + jsonStr[i].totalPrice;
+								var totalParticipant = jsonStr[i].totalParticipant || 0;
 								var fee = jsonStr[i].fee;
 								var winner = jsonStr[i].winner;
 								var paymentOption = jsonStr[i].paymentOption;
@@ -491,6 +492,9 @@ $(document).ready(function () {
 										<td align="center">
 											<a href="../${pageURL}">${totalPrice}</a>
 										</td>
+										<td align="center">
+											<a href="#" class="js-participants" data-campaign-id="${campaignID}">${totalParticipant}</a>
+										</td>
 										<td>
 											<a href="../${pageURL}">${winner}</a>
 										</td>
@@ -499,7 +503,7 @@ $(document).ready(function () {
 										</td>
 									  </tr>
 								`;
-								
+
 								$(".tbl-weekly-raffless tbody").append(element);
 							}
 						}

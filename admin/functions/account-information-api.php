@@ -81,20 +81,20 @@ function handleSearch() {
     $searchParam = "%{$searchVal}%";
 
     // Query with prepared statement
+    // Every buyer counts as a customer — guests AND logged-in purchasers.
     $sql = "
-        SELECT DISTINCT 
-            first_name, 
-            last_name, 
-            email, 
-            phone 
-        FROM tbl_ticket 
-        WHERE purchased_by = 0 
-        AND (
-            first_name LIKE ? 
-            OR last_name LIKE ? 
-            OR email LIKE ? 
+        SELECT DISTINCT
+            first_name,
+            last_name,
+            email,
+            phone
+        FROM tbl_ticket
+        WHERE (
+            first_name LIKE ?
+            OR last_name LIKE ?
+            OR email LIKE ?
             OR phone LIKE ?
-        ) 
+        )
         ORDER BY first_name ASC
     ";
 
@@ -144,15 +144,14 @@ function handlePaymentHistory() {
 
     // Get payment history
     $sql = "
-        SELECT 
-            ticket_id, 
-            DATE_FORMAT(purchased_date, '%m/%d/%Y') AS purchased_date, 
-            total_price, 
-            card_number, 
-            payment_method 
-        FROM tbl_ticket 
-        WHERE purchased_by = 0 
-        AND email = ? 
+        SELECT
+            ticket_id,
+            DATE_FORMAT(purchased_date, '%m/%d/%Y') AS purchased_date,
+            total_price,
+            card_last4 AS card_number,
+            payment_method
+        FROM tbl_ticket
+        WHERE email = ?
         ORDER BY purchased_date DESC
     ";
 
@@ -176,11 +175,15 @@ function handlePaymentHistory() {
         $refundResult = $db->query($refundSql, [['i', $ticketId]]);
         $refundRow = $db->fetchRow($refundResult);
 
+        // Never expose a full card number to the CRM — only the last 4 digits.
+        $rawCard = preg_replace('/\D/', '', (string)$row['card_number']);
+        $cardMasked = $rawCard !== '' ? ('•••• ' . substr($rawCard, -4)) : '';
+
         $payments[] = [
             'ticketID' => $row['ticket_id'],
             'purchased_date' => $row['purchased_date'],
             'total_price' => $row['total_price'],
-            'card_number' => $row['card_number'],
+            'card_number' => $cardMasked,
             'payment_method' => $row['payment_method'],
             'totalRefund' => $refundRow['amount'] ?? null,
             'userRole' => $getUserRole

@@ -1,12 +1,15 @@
 <?php
-if($_GET['confirmationCode']) {
+if(!empty($_GET['confirmationCode'])) {
 	require("config/db.php");
-	
-	$confirmationCode = mysqli_real_escape_string($con, $_GET['confirmationCode']);
-	
-	$qChkData = mysqli_query($con, "SELECT * FROM tbl_users WHERE fp_code = '" . $confirmationCode . "'");
-	if(mysqli_num_rows($qChkData) > 0) {
-	$dData = mysqli_fetch_array($qChkData);
+
+	$confirmationCode = trim($_GET['confirmationCode']);
+
+	$stmt = $con->prepare("SELECT email_address FROM tbl_users WHERE fp_code = ? AND fp_code != '' AND fp_code_expires IS NOT NULL AND fp_code_expires > NOW() LIMIT 1");
+	$stmt->bind_param("s", $confirmationCode);
+	$stmt->execute();
+	$qChkData = $stmt->get_result();
+	if($qChkData->num_rows > 0) {
+	$dData = $qChkData->fetch_assoc();
 	$getEmailAddress = $dData['email_address'];
 	?>
 		<!DOCTYPE html>
@@ -24,6 +27,8 @@ if($_GET['confirmationCode']) {
 				<link rel="stylesheet" href="../assets/css/style.css" />
 				<link rel="stylesheet" href="assets/css/sweetalert.css" />
 				<link rel="stylesheet" href="../assets/font/fontawesome/css/all.min.css" />
+				<!-- Utility-pages layer (overrides style.css) -->
+				<link rel="stylesheet" href="../assets/css/site.css" />
 
 				<script src="../assets/js/jquery.min.js"></script>
 				<script src="../assets/js/bootstrap/js/bootstrap.bundle.min.js"></script>
@@ -31,7 +36,7 @@ if($_GET['confirmationCode']) {
 				<script src="../assets/js/reset-password.js"></script>
 				<script src="../assets/font/fontawesome/js/all.min.js"></script>
 			  </head>
-			  <body>
+			  <body class="page-auth">
 				<div class="login-container">
 				  <div class="signup-logo">
 					<a href="/"
@@ -46,13 +51,14 @@ if($_GET['confirmationCode']) {
 					</div>
 					<div class="row">
 					  <div class="col-md">
-						<input type="text" placeholder="Emai" id="email" value="<?php echo $getEmailAddress; ?>" readonly/>
+						<input type="text" placeholder="Email" id="email" value="<?php echo htmlspecialchars($getEmailAddress, ENT_QUOTES, 'UTF-8'); ?>" readonly/>
+						<input type="hidden" id="fpCode" value="<?php echo htmlspecialchars($confirmationCode, ENT_QUOTES, 'UTF-8'); ?>"/>
 					  </div>
 					</div>
 					<div class="row">
 					  <div class="col-md">
 						<input type="password" placeholder="Password" id="password" />
-						<div class="alert minPassword" style="display: none; color: red;">Minimal password length is 7 characters!</div>
+						<div class="alert minPassword" style="display: none;">Password must be at least 6 characters.</div>
 					  </div>
 					</div>
 					<div class="row">
@@ -63,7 +69,7 @@ if($_GET['confirmationCode']) {
 						  id="confirmPassword"
 						/>
 						
-						<div class="alert mustSamePassword" style="display: none; color: red;">Password and Confirm password must be same!</div>
+						<div class="alert mustSamePassword" style="display: none;">Passwords don&rsquo;t match.</div>
 					  </div>
 					</div>
 					<div class="row">
@@ -87,20 +93,17 @@ if($_GET['confirmationCode']) {
 					<div class="row">
 					  <div class="menu-footer">
 						<a href="/">Home</a>
-						<a href="live-campaign">Live Campaigns</a>
-						<a href="all-campaign">All Campaigns</a>
+						<a href="/drawing">Drawing Page</a>
+						<a href="/contact">Contact Us</a>
 					  </div>
 					</div>
 					<div class="row">
 					  <div class="text-desc">
-						Lörem ipsum od ohet dilogi. Bell trabel, samuligt, ohöbel utom
-						diska. Jinesade bel när feras redorade i belogi. FAR paratyp <br />
-						i muvåning, och pesask vyfisat. Viktiga poddradio har un mad och
-						inde.
+						The Goral is a weekly community split-the-pot drawing. One ticket can win the pot &mdash; and a share of every pot goes to tzedakah. Winners are drawn and posted publicly each week.
 					  </div>
 					</div>
 					<div class="row">
-					  <div class="copyright">© 2022 The Goral</div>
+					  <div class="copyright">© <?php echo date('Y'); ?> The Goral</div>
 					</div>
 				  </div>
 				</div>

@@ -1,0 +1,16 @@
+# Local-only credentials and config (never commit)
+config/db.local.php
+
+# OS cruft
+.DS_Store
+**/.DS_Store
+
+# Runtime logs
+logs/
+*.log
+
+# Local design mockups (not deployed)
+design-reference/
+
+# Browser automation scratch (Playwright/Claude)
+.playwright-mcp/

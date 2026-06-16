@@ -1,25 +1,36 @@
 <?php
-if($_GET['confirmationCode']) {
+if(!empty($_GET['confirmationCode'])) {
 	require("../config/db.php");
-	
-	$confirmationCode = mysqli_real_escape_string($con, $_GET['confirmationCode']);
-	
-	$qChkData = mysqli_query($con, "SELECT * FROM tbl_users WHERE confirmation_code = '" . $confirmationCode . "' AND active = 1");
-	if(mysqli_num_rows($qChkData) > 0) {
-		header("Location: /");
+
+	$confirmationCode = trim($_GET['confirmationCode']);
+
+	$stmt = $con->prepare("SELECT user_id, active FROM tbl_users WHERE confirmation_code = ? AND confirmation_code != '' LIMIT 1");
+	$stmt->bind_param("s", $confirmationCode);
+	$stmt->execute();
+	$result = $stmt->get_result();
+
+	if($result->num_rows > 0) {
+		$user = $result->fetch_assoc();
+
+		if((int)$user['active'] === 1) {
+			header("Location: /");
+			exit;
+		}
+
+		$update = $con->prepare("UPDATE tbl_users SET active = 1 WHERE user_id = ?");
+		$update->bind_param("i", $user['user_id']);
+		$update->execute();
+		$update->close();
 	}
 	else {
-		$qChkData = mysqli_query($con, "SELECT * FROM tbl_users WHERE confirmation_code = '" . $confirmationCode . "'");
-		if(mysqli_num_rows($qChkData) > 0) {
-			$qUpdate = mysqli_query($con, "UPDATE tbl_users SET active = 1 WHERE confirmation_code = '" . $confirmationCode . "'");
-		}
-		else {
-			header("Location: 403");
-		}
+		header("Location: /403");
+		exit;
 	}
+	$stmt->close();
 }
 else {
-	header("Location: 403");
+	header("Location: /403");
+	exit;
 }
 ?>
 <!DOCTYPE html>
@@ -152,7 +163,7 @@ else {
         </div>
         <div class="btn">
           <a
-            href="/sign-in.html"
+            href="/sign-in"
             >Sign in Now</a
           >
         </div>

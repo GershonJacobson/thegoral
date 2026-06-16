@@ -20,15 +20,14 @@ if (!isset($getUserRole) || $getUserRole == 0) {
 // Initialize database helper
 $db = new Database($con);
 
-// Get initial list of accounts (purchased_by = 0 means direct customers, not referrals)
+// Initial list of customers — every ticket buyer, guest or logged-in.
 $sql = "
-    SELECT DISTINCT 
-        first_name, 
-        last_name, 
-        email, 
-        phone 
-    FROM tbl_ticket 
-    WHERE purchased_by = 0 
+    SELECT DISTINCT
+        first_name,
+        last_name,
+        email,
+        phone
+    FROM tbl_ticket
     ORDER BY first_name ASC
 ";
 
@@ -52,6 +51,8 @@ $accounts = $db->fetchAll($accountsResult);
     <link rel="stylesheet" href="../assets/css/sweetalert.css" />
     <link rel="stylesheet" href="../assets/css/bootstrap/css/bootstrap.min.css" />
     <link href="css/sb-admin-2.css" rel="stylesheet" />
+    <!-- The Goral brand layer (overrides sb-admin-2) -->
+    <link href="css/goral-admin.css" rel="stylesheet" />
 
     <!-- Scripts -->
     <script src="../assets/js/jquery.min.js"></script>
@@ -64,7 +65,7 @@ $accounts = $db->fetchAll($accountsResult);
         <!-- ==================== SIDEBAR ==================== -->
         <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion toggled" id="accordionSidebar">
             <a class="sidebar-brand d-flex align-items-center justify-content-center" href="/admin">
-                <img style="width: 100px; height: 25px" src="../assets/images/logo-dark.png" alt="Logo" />
+                <img style="width: 64px; height: auto" src="../assets/images/logo.svg" alt="Logo" />
             </a>
 
             <hr class="sidebar-divider my-0" />
@@ -82,9 +83,9 @@ $accounts = $db->fetchAll($accountsResult);
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="delegate-access">
-                    <i class="fa-solid fa-users-gear"></i>
-                    <span>Delegate Access</span>
+                <a class="nav-link" href="raffles-done">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                    <span>Raffles Done</span>
                 </a>
             </li>
 
@@ -164,6 +165,7 @@ $accounts = $db->fetchAll($accountsResult);
                                                 <span class="text-info-ds" style="font-weight: 700;">
                                                     <?php echo htmlspecialchars($account['first_name'] . " " . $account['last_name']); ?>
                                                 </span>
+                                                <span class="account-sub"><?php echo htmlspecialchars(trim(($account['email'] ?? '') . ($account['phone'] ? ' · ' . $account['phone'] : ''))); ?></span>
                                             </div>
                                         </div>
                                     <?php endforeach; ?>
@@ -182,7 +184,7 @@ $accounts = $db->fetchAll($accountsResult);
             <footer class="sticky-footer bg-white">
                 <div class="container my-auto">
                     <div class="copyright text-center my-auto">
-                        <span>Copyright &copy; The Goral 2024</span>
+                        <span>&copy; <?php echo date('Y'); ?> The Goral</span>
                     </div>
                 </div>
             </footer>
@@ -202,29 +204,6 @@ $accounts = $db->fetchAll($accountsResult);
                             <button class="closeBtn" id="closeBtn" style="background: none; border: none; font-size: 24px; cursor: pointer;">
                                 <i class="fa-solid fa-circle-xmark"></i>
                             </button>
-                        </div>
-                    </div>
-
-                    <!-- Profile Section -->
-                    <div class="row mt-4">
-                        <div class="col-md-12">
-                            <div class="title-profile">Profile</div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="box-profile" style="margin-top: 10px;">
-                                <div class="col-md-1">
-                                    <div class="profile-icon">
-                                        <img src="../assets/images/user-icon.png" alt="Profile Icon" />
-                                    </div>
-                                </div>
-                                <div class="col-md-12">
-                                    <div class="text-profile">
-                                        <span class="profile-name"></span>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
@@ -385,14 +364,7 @@ $accounts = $db->fetchAll($accountsResult);
     </div>
 
     <!-- Scripts -->
-    <script src="js/sb-admin-2.min.js"></script>
+    <script src="/admin/js/sb-admin-2.min.js"></script>
     <script src="/admin/js/account-information.js"></script>
 </body>
 </html>
-
-<?php
-} else {
-    header("Location: ../sign-in");
-    exit;
-}
-?>

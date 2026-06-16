@@ -55,7 +55,15 @@ class Database {
                 return false;
             }
 
-            return $stmt->get_result();
+            $result = $stmt->get_result();
+
+            // INSERT/UPDATE/DELETE have no result set: get_result() returns
+            // false with errno 0, which still means success.
+            if ($result === false && $stmt->errno === 0) {
+                return true;
+            }
+
+            return $result;
         } catch (Exception $e) {
             $this->lastError = $e->getMessage();
             error_log("Database error: " . $this->lastError);

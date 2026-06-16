@@ -32,6 +32,8 @@ if($getUserRole != 0) {
 
 		<!-- Custom styles for this template-->
 		<link href="css/sb-admin-2.css" rel="stylesheet" />
+    <!-- The Goral brand layer (overrides sb-admin-2) -->
+    <link href="css/goral-admin.css" rel="stylesheet" />
 		
 		<!-- Bootstrap core JavaScript-->
 		<script src="../assets/js/jquery.min.js"></script>
@@ -39,35 +41,7 @@ if($getUserRole != 0) {
 		<script src="../assets/js/sweetalert.min.js"></script>
 		<script src="https://unpkg.com/gijgo@1.9.14/js/gijgo.min.js" type="text/javascript"></script>
 		<script src="/admin/js/dashboard.js"></script>
-		<script>
-			$(document).ready(function () {
-			$('#edtStartDate').change(function() {
-			var currentDate = "<?php echo date('Y-m-d'); ?>";
-			var startDate = $("#edtStartDate").val();
-			$("#edtEndDate").val("");
-			if(startDate < currentDate) {
-			$("#edtStartDate").val("");
-			}
-			});
-
-		
-
-		$('#edtEndDate').change(function() {
-			var currentDate = "<?php echo date('Y-m-d'); ?>";
-			var startDate = $("#edtStartDate").val();
-			var endDate = $("#edtEndDate").val();
-
-			if(endDate < startDate) {
-				$("#edtEndDate").val("");
-			}
-
-			if(endDate < currentDate){
-				$("#edtEndDate").val("");
-			}
-			});
-			})
-			
-		</script>
+		<script src="/admin/js/participants.js"></script>
 	  </head>
 
 	  <body id="page-top">
@@ -85,8 +59,8 @@ if($getUserRole != 0) {
 			>
 			  <div class="sidebar-brand-icon rotate-n-15"></div>
 			  <img
-				style="width: 100px; height: 25px"
-				src="../assets/images/logo-dark.png"
+				style="width: 64px; height: auto"
+				src="../assets/images/logo.svg"
 				alt=""
 			  />
 			</a>
@@ -109,9 +83,9 @@ if($getUserRole != 0) {
 			  >
 			</li>
 			<li class="nav-item">
-			  <a class="nav-link" href="delegate-access">
-				<i class="fa-solid fa-users-gear"></i>
-				<span>Delegate Access</span></a
+			  <a class="nav-link" href="raffles-done">
+				<i class="fa-solid fa-clipboard-check"></i>
+				<span>Raffles Done</span></a
 			  >
 			</li>
 			
@@ -154,7 +128,7 @@ if($getUserRole != 0) {
 					  <span
 						class="mr-2 d-none d-lg-inline text-gray-600 small"
 						style="color: #fff !important"
-						><?php echo $getFirstName." ".$getLastName; ?> </span
+						><?php echo htmlspecialchars($getFirstName." ".$getLastName, ENT_QUOTES, 'UTF-8'); ?> </span
 					  >
 					  <img
 						class="img-profile rounded-circle"
@@ -216,41 +190,6 @@ if($getUserRole != 0) {
                         }
 					</script> 
 				  </div>
-				  
-				  <?php
-				  if($getUserRole == 2) {}
-				  else {
-				  ?>
-					  <div class="filter-by-container">
-						<button class="btn dropdown-toggle btn-filter" type="button" id="dropdownMenuClickableInside" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="background: #e7e7e7; margin-bottom: 10px;">
-							Sort by
-						</button>
-						
-						<ul class="dropdown-menu" aria-labelledby="dropdownMenuClickableInside" style="box-shadow: 0 5px 5px -5px #333; min-width: 250px;">
-							<li>
-								<div class="label-radio"><label for="at"> All Time</label></div>
-								<div class="input-radio"><input type="radio" class="radio" name="filter-dashboard" id="at" value="at" checked/></div>
-							</li>
-							
-							<li>
-								<div class="label-radio"><label for="lm"> This Month</label></div>
-								<div class="input-radio"><input type="radio" class="radio" name="filter-dashboard" id="lm" value="lm"/></div>
-							</li>
-							
-							<li>
-								<div class="label-radio"><label for="ltm"> Last 3 Months</label></div>
-								<div class="input-radio"><input type="radio" class="radio" name="filter-dashboard" id="ltm" value="ltm"/></div>
-							</li>
-							
-							<li>
-								<div class="label-radio"><label for="loy"> Last 1 Year</label></div>
-								<div class="input-radio"><input type="radio" class="radio" name="filter-dashboard" id="loy" value="loy"/></div>
-							</li>
-						</ul>
-					</div>
-				<?php
-				  }
-				?>
 				</div>
 
 				<!-- Content Row -->
@@ -296,13 +235,15 @@ if($getUserRole != 0) {
 								<div
 								  class="text-xs font-weight-bold text-success text-uppercase mb-1"
 								>
-								  Profits
+								  Profit After Payouts
 								</div>
 								<div class="h5 mb-0 font-weight-bold text-gray-800 total-profits">
 									$<?php
-									$qProfit = mysqli_query($con, "SELECT COALESCE(SUM(total_price), 0) AS total_profit FROM tbl_ticket WHERE win_ticket_id != 0");
+									// Winners take half the pot, so profit on drawn
+									// raffles is the other half — not the full pot.
+									$qProfit = mysqli_query($con, "SELECT ROUND(COALESCE(SUM(total_price), 0) / 2, 2) AS total_profit FROM tbl_ticket WHERE win_ticket_id != 0");
 									$dProfit = mysqli_fetch_array($qProfit);
-									
+
 									echo $dProfit['total_profit'];
 									?>
 								</div>
@@ -333,9 +274,9 @@ if($getUserRole != 0) {
 										class="h5 mb-0 mr-3 font-weight-bold text-gray-800 raffles-done"
 									  >
 										<?php
-										$qClosedCampaign = mysqli_query($con, "SELECT COUNT(*) AS total_campaign FROM tbl_campaign");
+										$qClosedCampaign = mysqli_query($con, "SELECT COUNT(*) AS total_campaign FROM tbl_campaign WHERE status = 'closed'");
 										$dClosedCampaign = mysqli_fetch_array($qClosedCampaign);
-										
+
 										echo $dClosedCampaign['total_campaign'];
 										?>
 									  </div>
@@ -357,35 +298,7 @@ if($getUserRole != 0) {
 				}
 				?>
 				<!-- Content Row -->
-				
-				<div class="filter-by-container">
-					<button class="btn dropdown-toggle btn-filter" type="button" id="dropdownMenuClickableInside" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="background: #e7e7e7; margin-bottom: 10px;">
-						Sort by
-					</button>
-					
-					<ul class="dropdown-menu" aria-labelledby="dropdownMenuClickableInside" style="box-shadow: 0 5px 5px -5px #333; min-width: 250px;">
-						<li>
-							<div class="label-radio"><label for="pmmtl"> Pot: Most Money - Least</label></div>
-							<div class="input-radio"><input type="radio" class="radio" name="filter" id="pmmtl" value="pmmtl" checked/></div>
-						</li>
-						
-						<li>
-							<div class="label-radio"><label for="plmtm"> Pot: Least Money - Most</label></div>
-							<div class="input-radio"><input type="radio" class="radio" name="filter" id="plmtm" value="plmtm"/></div>
-						</li>
-						
-						<li>
-							<div class="label-radio"><label for="clltm"> Countdown: least time left - most</label></div>
-							<div class="input-radio"><input type="radio" class="radio" name="filter" id="clltm" value="clltm"/></div>
-						</li>
-						
-						<li>
-							<div class="label-radio"><label for="cmltl"> Countdown: most time left - least</label></div>
-							<div class="input-radio"><input type="radio" class="radio" name="filter" id="cmltl" value="cmltl"/></div>
-						</li>
-					</ul>
-				</div>
-				
+
 				<script>
 				var countdowns = [];
 				</script>
@@ -452,15 +365,14 @@ if($getUserRole != 0) {
 									<div class="col-md-3 user-icon">
 										<a href="../<?php echo $pageURL; ?>">
 											<img src="../assets/images/user-icon.png" alt="" />
-											<span class="campaign-name<?php echo $data['campaign_id']; ?>"><?php echo $data['campaign_name']; ?></span>
+											<span class="campaign-name<?php echo $data['campaign_id']; ?>"><?php echo htmlspecialchars($data['campaign_name'], ENT_QUOTES, 'UTF-8'); ?></span>
 										</a>
 									</div>
 									<div class="col-md-2">
-										<a href="../<?php echo $pageURL; ?>">
+										<a href="#" class="js-participants" data-campaign-id="<?php echo $data['campaign_id']; ?>" title="View participants">
 										<?php
-										echo $totalParticipant;
+										echo $totalParticipant . " " . ($totalParticipant == 1 ? "Participant" : "Participants");
 										?>
-										Participant
 										</a>
 									</div>
 									<div class="col-md-3"><a href="../<?php echo $pageURL; ?>">Time Left <span class="countdown-<?php echo $data['campaign_id']; ?>">0d 0h 0m 0s</span></a></div>
@@ -521,7 +433,7 @@ if($getUserRole != 0) {
 																data-end-date="<?php echo $data['end_date_f']; ?>"
 																data-start-time="<?php echo $data['start_time']; ?>"
 																data-end-time="<?php echo $data['end_time']; ?>"
-																data-campaign-name="<?php echo $data['campaign_name']; ?>"
+																data-campaign-name="<?php echo htmlspecialchars($data['campaign_name'], ENT_QUOTES, 'UTF-8'); ?>"
 																data-category="<?php echo $data['category']; ?>"
 																data-public="<?php echo $data['public']; ?>"
 																data-ticket-price1="<?php echo $ticketPrice1; ?>"
@@ -562,7 +474,7 @@ if($getUserRole != 0) {
 																data-end-date="<?php echo $data['end_date_f']; ?>"
 																data-start-time="<?php echo $data['start_time']; ?>"
 																data-end-time="<?php echo $data['end_time']; ?>"
-																data-campaign-name="<?php echo $data['campaign_name']; ?>"
+																data-campaign-name="<?php echo htmlspecialchars($data['campaign_name'], ENT_QUOTES, 'UTF-8'); ?>"
 																data-category="<?php echo $data['category']; ?>"
 																data-public="<?php echo $data['public']; ?>"
 																data-ticket-price1="<?php echo $ticketPrice1; ?>"
@@ -669,7 +581,7 @@ if($getUserRole != 0) {
 					?>
 						<div class="row" style="text-align: center;">
 							<h2 class="load-more"><i class="fa-solid fa-chevron-down" style="font-size: 20px; cursor: pointer;"></i></h2>
-							<input type="hidden" id="filter" value="<?php echo $_GET['filter']; ?>">
+							<input type="hidden" id="filter" value="<?php echo htmlspecialchars($_GET['filter'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
 							<input type="hidden" id="row" value="0">
 							<input type="hidden" id="all" value="<?php echo $allcount; ?>">
 							<input type="hidden" id="currentNo" value="<?php echo $rowperpage; ?>">
@@ -687,7 +599,7 @@ if($getUserRole != 0) {
 			<footer class="sticky-footer bg-white">
 			  <div class="container my-auto">
 				<div class="copyright text-center my-auto">
-				  <span>Copyright &copy; Thegoral.com 2021</span>
+				  <span>&copy; <?php echo date('Y'); ?> The Goral</span>
 				</div>
 			  </div>
 			</footer>
@@ -697,6 +609,8 @@ if($getUserRole != 0) {
 		</div>
 		<!-- End of Page Wrapper -->
 		
+		<?php require("participants-modal.php"); ?>
+
 		<div
 		  class="modal fade bd-example-modal-lg"
 		  id="editCampModal"
@@ -717,16 +631,18 @@ if($getUserRole != 0) {
 				<div class="row">
 				  <div class="col-md">
 					<div class="form-group">
-					  <label for="edtStartDate"
-						>Start Date<small style="color: red">*</small></label
-					  >
+					  <label for="edtStartDate">Started</label>
 					  <input type="hidden" id="edtCampaignID"/>
 					  <input type="hidden" id="edtCategory"/>
+					  <!-- the raffle is live; its start date is history -->
 					  <input
-					  	type="datetime-local"
+						type="text"
 						class="form-control"
 						id="edtStartDate"
 						autocomplete="off"
+						readonly
+						tabindex="-1"
+						style="background: #f4f6fa; color: #8a93a3; cursor: not-allowed;"
 					  />
 					</div>
 				  </div>
@@ -822,7 +738,7 @@ if($getUserRole != 0) {
 	  </body>
 	  
 		<!-- Custom scripts for all pages-->
-		<script src="js/sb-admin-2.min.js"></script>
+		<script src="/admin/js/sb-admin-2.min.js"></script>
 	</html>
 <?php
 }

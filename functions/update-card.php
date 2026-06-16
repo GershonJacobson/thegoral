@@ -1,32 +1,27 @@
 <?php
-if(isset( $_SERVER['HTTP_X_REQUESTED_WITH']) && ($_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest')) {
+/**
+ * Update a saved card.
+ *
+ * Editing card details requires re-tokenizing through PayArc (raw card data
+ * never touches this server). That ships with the wallet/token phase; until
+ * then we report unavailable. Removing a card still works (delete-card.php).
+ */
+if(isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+	require("../config/db.php");
 	session_start();
 	require("../config/session.php");
 
-	$ccID = $_POST['ccID'];
-	$ccName = mysqli_real_escape_string($con, $_POST['ccName']);
-	$ccNumber = mysqli_real_escape_string($con, $_POST['ccNumber']);
-	$ccExpired = mysqli_real_escape_string($con, $_POST['ccExpired']);
-	$ccCVV = mysqli_real_escape_string($con, $_POST['ccCVV']);
-	$zip = mysqli_real_escape_string($con, $_POST['zip']);
-	
-	$qChkData = mysqli_query($con, "SELECT * FROM tbl_card WHERE card_id = '$ccID'");
-	if(mysqli_num_rows($qChkData) > 0) {
-		$qSave = mysqli_query($con, "UPDATE tbl_card SET card_number = '" . $ccNumber . "', card_name = '" . $ccName . "', expired = '" . $ccExpired . "', cvv = '" . $ccCVV . "', zip = '" . $zip . "' WHERE card_id = '" . $ccID . "'");
-		
-		$data = array(
-			"result" => "OK"
-		);
+	if($getUserID == "") {
+		http_response_code(403);
+		echo json_encode(["result" => "notLoggedIn"]);
+		exit;
 	}
-	else {
-		$data = array(
-			"result" => "notExisted"
-		);
-	}
-	
-	echo json_encode($data);
-}
-else {
+
+	echo json_encode([
+		"result"  => "notAvailable",
+		"message" => "Editing saved cards is coming soon. You can remove a card and add it again at checkout."
+	]);
+} else {
 	header("Location: 403");
 }
 ?>

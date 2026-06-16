@@ -287,16 +287,18 @@ $(document).ready(function() {
 						if(jsonStr[0].length > 0) {
 							for(var i=0; i<jsonStr[0].length; i++) {
 								var campaignID = jsonStr[0][i].campaignID;
+								var ticketNo = jsonStr[0][i].ticketNo;
 								var paymentStatus = jsonStr[0][i].paymentStatus;
 								var paymentMethod = jsonStr[0][i].paymentMethod;
 								var campaignName = jsonStr[0][i].campaignName;
 								var url = jsonStr[0][i].url;
 								var purchasedDate = jsonStr[0][i].purchasedDate;
 								var totalPrice = jsonStr[0][i].totalPrice;
-								
+
 								var element = `
 									<tr>
 										<td><a href="${url}">${campaignName}</a></td>
+										<td><a href="${url}">#${ticketNo}</a></td>
 										<td><a href="${url}">${purchasedDate}</a></td>
 										<td><a href="${url}">$${totalPrice}</a></td>
 										<td><a href="${url}">${paymentMethod}</a></td>

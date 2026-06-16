@@ -87,7 +87,7 @@ $(document).ready(function() {
                         <tr>
                             <td>${payment.purchased_date}</td>
                             <td>$${payment.total_price}</td>
-                            <td>${payment.payment_method}</td>
+                            <td>${payment.payment_method || '—'}</td>
                             <td>${refundCell}</td>
                         </tr>
                     `;
@@ -273,7 +273,7 @@ $(document).ready(function() {
         }, 300);
     });
 
-    function performSearch(searchVal) {
+    function performSearch(searchVal, autoOpenSingle) {
         const $dataContainer = $('.data-account');
         $dataContainer.empty().append('<div class="loading">Searching...</div>');
 
@@ -302,15 +302,38 @@ $(document).ready(function() {
                                  data-number="${index}">
                                 <span class="user-icon"><img src="../assets/images/user-icon.png" alt="User"/></span>
                                 <span class="text-info-ds" style="font-weight: 700">${escapeHtml(account.firstName + ' ' + account.lastName)}</span>
+                                <span class="account-sub">${escapeHtml([account.emailAddress, account.phone].filter(Boolean).join(' · '))}</span>
                             </div>
                         </div>
                     `;
                     $dataContainer.append(card);
                 });
+
+                // came from a deep link and there's exactly one match: open it
+                if (autoOpenSingle && accounts.length === 1) {
+                    $('.card-info-edit0').trigger('click');
+                }
             },
             error: function() {
                 $dataContainer.empty().append('<div style="padding: 20px; text-align: center; color: red;">Search failed</div>');
             }
+        });
+    }
+
+    // Deep link: account-information?q=<email or name> (used by the participants modal)
+    const deepLinkQ = new URLSearchParams(window.location.search).get('q');
+    if (deepLinkQ) {
+        $('#search').val(deepLinkQ);
+        performSearch(deepLinkQ, true);
+    }
+
+    // Arrived from a participants list (?back=/admin/...?participants=<id>):
+    // closing the profile returns to that list, reopened on the same raffle.
+    const backTo = new URLSearchParams(window.location.search).get('back');
+    const backToSafe = (backTo && /^\/admin\/(raffles-done)?\?participants=[A-Za-z0-9-]+$/.test(backTo)) ? backTo : null;
+    if (backToSafe) {
+        $(document).on('click', '#closeBtn', function () {
+            window.location.href = backToSafe;
         });
     }
 

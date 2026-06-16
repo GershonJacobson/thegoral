@@ -683,13 +683,8 @@ hr {
 }
 
 .footer {
-  background: radial-gradient(
-    84.73% 107.94% at 46.45% 0.94%,
-    #4a5464 0%,
-    #3f4c63 20.31%,
-    #283346 67.19%,
-    #182232 100%
-  );
+  background: #121a29;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
   padding-top: 30px;
   padding-bottom: 30px;
 }
@@ -765,7 +760,7 @@ hr {
 }
 
 .header-ac-bg {
-  background: linear-gradient(0.82deg, #5c687b -14.22%, #182232 84.83%);
+  background: linear-gradient(180deg, #1b2536 0%, #121a29 100%);
 }
 
 .margin-40 {
@@ -2672,13 +2667,8 @@ input:checked ~ .text.on {
   }
 
   .footer {
-    background: radial-gradient(
-      84.73% 107.94% at 46.45% 0.94%,
-      #4a5464 0%,
-      #3f4c63 20.31%,
-      #283346 67.19%,
-      #182232 100%
-    );
+    background: #121a29;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
     padding-top: 15px;
     padding-bottom: 10px;
   }
@@ -3015,9 +3005,11 @@ input:checked ~ .text.on {
   }
 
   .box-bn {
-    width: 175px;
-    height: 50px;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 355 / 107;
     background-image: url(../images/bg-buynow-2.png);
+    background-size: 100% 100%;
   }
   .box-bn-b {
     background-image: url(../images/bg-buynow-1.png);
@@ -3405,3 +3397,203 @@ input:checked ~ .text.on {
   }
 }
 /* Mobile */
+
+/* ============================================================
+   Checkout modal — compact single-screen layout.
+   Scoped to #checkoutModal so nothing else moves. Shared by
+   index.php and campaign.php (both render the same modal).
+   ============================================================ */
+#checkoutModal .modal-body, #addCardModal .modal-body { padding: 20px 26px; overflow-x: hidden; }
+#checkoutModal .modal-title, #addCardModal .modal-title { font-size: 17px; }
+#checkoutModal .mt-4, #addCardModal .mt-4 { margin-top: 12px !important; }
+#checkoutModal .mb-4, #addCardModal .mb-4 { margin-bottom: 6px !important; }
+#checkoutModal .form-group, #addCardModal .form-group { margin-top: 6px; }
+#checkoutModal .form-group label, #addCardModal .form-group label { font-size: 12px; font-weight: 600; }
+#checkoutModal .form-control, #addCardModal .form-control { padding: 8px 10px; font-size: 14px; }
+
+/* Ticket selector: compact cards replace the 107px PNG banners.
+   background-image:none !important also neutralizes the legacy
+   inline background swaps from campaign.php's click handlers. */
+#checkoutModal .box-bn {
+  width: 100%;
+  height: 54px;
+  aspect-ratio: auto;
+  margin-top: 8px;
+  background-image: none !important;
+  background-color: #f6f7f9;
+  border: 1.5px solid #e3e6eb;
+  border-radius: 12px;
+  opacity: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+#checkoutModal .box-bn:hover { border-color: #ecbf72; }
+#checkoutModal .box-bn h5 {
+  margin: 0;
+  padding: 0;
+  font-family: "Archivo";
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  color: #5a6372;
+}
+#checkoutModal .box-bn h3 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1;
+  color: #182232;
+}
+#checkoutModal .box-bn-active {
+  /* !important so it beats the base rule's background-image:none */
+  background: linear-gradient(180deg, #ffcc64 0%, #ec8e37 100%) !important;
+  border-color: #e9b35a;
+}
+#checkoutModal .box-bn-active h5 { color: #5b3a10; }
+#checkoutModal .box-bn-active h3 { color: #2a1b05; }
+
+/* "Payment Method" / "Summary": slim section labels, not headlines */
+#checkoutModal .text-pay {
+  font-family: "Archivo";
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: left;
+  color: #8a93a3;
+}
+#checkoutModal .box-pay img { width: 56px; height: 38px; padding: 7px; }
+#checkoutModal .box-pay { margin-bottom: 0 !important; text-align: left; }
+
+/* Summary: one slim line above the button */
+#checkoutModal .summary-purchase { border-top: 1px solid #ececec; margin-top: 14px; }
+#checkoutModal .text-sum { font-size: 14px; color: #182232; }
+
+#checkoutModal .btnBuyTicket, #addCardModal .btnBuyTicket { width: 260px; height: 46px; font-size: 16px; }
+
+#checkoutModal .save-card-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Archivo";
+  font-size: 13px;
+  font-weight: 600;
+  color: #5a6372;
+  cursor: pointer;
+}
+#checkoutModal .save-card-label input { accent-color: #ec8e37; width: 15px; height: 15px; }
+
+/* ---- Desktop nav: glass pill with gold active state ---- */
+@media (min-width: 992px) {
+  #navbarNav .navbar-nav {
+    margin-left: 0;
+    align-items: center;
+    gap: 2px;
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+  }
+  #navbarNav .nav-item { margin-right: 0; }
+  #navbarNav .nav-item:last-child { padding-bottom: 0; }
+  #navbarNav .navbar-nav .nav-link {
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-family: "Archivo";
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.72);
+    transition: color 0.15s ease, background-color 0.15s ease;
+  }
+  #navbarNav .navbar-nav .nav-link:hover { color: #ffffff; }
+  #navbarNav .navbar-nav .nav-link.active {
+    background: linear-gradient(180deg, #ffcc64 0%, #ec8e37 100%);
+    color: #54380e !important;
+    box-shadow: 0 4px 10px -4px rgba(236, 142, 55, 0.55);
+  }
+}
+
+/* ---- Avatar chip + account menu (header, all pages) ---- */
+.avatar-trigger { text-decoration: none; }
+.avatar-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ffcc64 0%, #ec8e37 100%);
+  color: #54380e;
+  font-family: "Archivo";
+  font-weight: 700;
+  font-size: 16px;
+  box-shadow: 0 4px 10px -4px rgba(236, 142, 55, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.avatar-chip i { font-size: 14px; }
+.avatar-chip-sm { width: 34px; height: 34px; font-size: 14px; flex: 0 0 34px; box-shadow: none; }
+
+.goral-menu {
+  min-width: 232px;
+  padding: 8px;
+  margin-top: 10px !important;
+  border: 1px solid #e8ecf2;
+  border-radius: 14px;
+  box-shadow: 0 24px 48px -16px rgba(16, 22, 38, 0.28);
+}
+.goral-menu-head { display: flex; align-items: center; gap: 10px; padding: 8px 10px 6px; }
+.goral-menu-id { display: flex; flex-direction: column; min-width: 0; }
+.goral-menu-name { font-family: "Archivo"; font-weight: 700; font-size: 14px; color: #182232; }
+.goral-menu-mail {
+  font-family: "Archivo";
+  font-size: 12px;
+  color: #8a93a3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+}
+.goral-menu .dropdown-item {
+  font-family: "Archivo";
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  color: #303a4d !important;
+  border-radius: 8px;
+  padding: 9px 10px !important;
+  margin: 0 !important;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.goral-menu .dropdown-item i { width: 16px; color: #9aa3b2; font-size: 13px; }
+.goral-menu .dropdown-item:hover { background-color: #f6f8fb; color: #d98b2b !important; }
+.goral-menu .dropdown-item:hover i { color: #d98b2b; }
+.goral-menu .dropdown-divider { margin: 6px 4px; border-color: #eef1f5; }
+.goral-menu-logout { color: #b3382c !important; }
+.goral-menu-logout i { color: #d8a09a !important; }
+.goral-menu-logout:hover { background-color: #fdf1f0 !important; color: #b3382c !important; }
+.goral-menu-logout:hover i { color: #b3382c !important; }
+
+/* ---- Inline field errors: one consistent style site-wide ---- */
+.emailNotValid, .phoneNotValid, .ccNotValid, .minPassword, .mustSamePassword,
+.fullNameCantBeEmpty, .messageCantBeEmpty {
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  background: #fdf1f0;
+  border: 1px solid #f2cbc6;
+  border-radius: 8px;
+  font-family: "Archivo";
+  font-size: 12.5px !important;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #b3382c !important;
+  text-align: left;
+}
+
+@media (max-width: 575px) {
+  #checkoutModal .modal-body { padding: 16px; }
+  #checkoutModal .box-bn { padding: 0 10px; height: 48px; }
+  #checkoutModal .box-bn h5 { font-size: 11px; }
+  #checkoutModal .box-bn h3 { font-size: 18px; }
+}

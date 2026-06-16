@@ -63,9 +63,23 @@ $(document).ready(function () {
 			event.preventDefault();
 	});
 	
+	// "06/16/2026" + "20:00" -> "2026-06-16T20:00" (datetime-local format)
+	function toDatetimeLocal(mdY, hm) {
+		var p = String(mdY).split('/');
+		if (p.length !== 3) return '';
+		return p[2] + '-' + p[0].padStart(2, '0') + '-' + p[1].padStart(2, '0') + 'T' + (hm || '00:00');
+	}
+
+	// current local time as a datetime-local string, for the end-date floor
+	function nowDatetimeLocal() {
+		var d = new Date();
+		d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+		return d.toISOString().slice(0, 16);
+	}
+
 	$(document).on('click', '.edit-campaign', function () {
 		$("#editCampModal").modal("show");
-		
+
 		var id = $(this).attr('id');
 		var startDate = $(this).data("start-date");
 		var startTime = $(this).data("start-time");
@@ -83,20 +97,19 @@ $(document).ready(function () {
 		else {
 			$('#edtPublic').prop('checked', false);
 		}
-		
+
 		if(category != "weekly") {
 			$('.switch-public').show();
 		}
 		else {
 			$('.switch-public').hide();
 		}
-	
+
 		$("#editCampModal #edtCampaignID").val(id);
 		$("#editCampModal #edtCampaignName").val(campaignName);
-		$("#editCampModal #edtStartDate").val(startDate);
-		$("#editCampModal #edtEndDate").val(endDate);
-		$("#editCampModal #edtStartTime").val(startTime);
-		$("#editCampModal #edtEndTime").val(endTime);
+		// start date is read-only display; end date is editable but can't be in the past
+		$("#editCampModal #edtStartDate").val(startDate + " " + startTime);
+		$("#editCampModal #edtEndDate").val(toDatetimeLocal(endDate, endTime)).attr("min", nowDatetimeLocal());
 		$("#editCampModal #edtCategory").val(category);
 		$("#editCampModal #1ticketPrice").val(ticketPrice1);
 		$("#editCampModal #2ticketPrice").val(ticketPrice2);
@@ -111,90 +124,68 @@ $(document).ready(function () {
 	
 	$("#btnUpdateCamp").click(function () {
 		var campaignID = $("#edtCampaignID").val();
-		var startDate = $("#edtStartDate").val();
-		var startDateF = $("#edtStartDate").val();
-		var endDate = $("#edtEndDate").val();
-		var endDateF = $("#edtEndDate").val();
-		var startTime = $("#edtStartTime").val();
-		var endTime = $("#edtEndTime").val();
+		var endDate = $("#edtEndDate").val(); // "YYYY-MM-DDTHH:MM"
 		var campaignName = $("#edtCampaignName").val();
 		var publicOrPrivate = $("#edtPublic").is(":checked") ? "true" : "false";
 		var publicOrPrivateF = $("#edtPublic").is(":checked") ? 1 : 0;
 		var category = $("#edtCategory").val();
 		var ticketPrice1 = $("#1ticketPrice").val();
 		var ticketPrice2 = $("#2ticketPrice").val();
-		
-		if(startDate == "" || endDate == "" || startTime == "" || endTime == "" || campaignName == "" || ticketPrice1 == "" || ticketPrice2 == "") {
-			if(startDate == "") {
-				$("#edtStartDate").focus();
-			}
-			else if(endDate == "") {
-				$("#edtEndDate").focus();
-			}
-			else if(startTime == "") {
-				$("#edtStartTime").focus();
-			}
-			else if(endTime == "") {
-				$("#edtEndTime").focus();
-			}
-			else if(campaignName == "") {
-				$("#edtCampaignName").focus();
-			}
-			else if(ticketPrice1 == "") {
-				$("#ticketPrice1").focus();
-			}
-			else if(ticketPrice2 == "") {
-				$("#ticketPrice2").focus();
-			}
+
+		if(endDate == "") { $("#edtEndDate").focus(); return; }
+		if(campaignName == "") { $("#edtCampaignName").focus(); return; }
+		if(ticketPrice1 == "") { $("#1ticketPrice").focus(); return; }
+		if(ticketPrice2 == "") { $("#2ticketPrice").focus(); return; }
+
+		// the raffle is live — it can't end in the past
+		if(new Date(endDate).getTime() <= Date.now()) {
+			Swal.fire({ text: "The end date has to be in the future — the raffle is still running.", icon: "error", confirmButtonText: "OK" });
+			return;
 		}
-		else {
-			var startDateD = new Date($('#edtStartDate').val());
-			dayD = startDateD.getDate();
-			
-			var endDateD = new Date($('#edtEndDate').val());
-			dayE = endDateD.getDate();
-			
-			startDate = startDate + " " + startTime;
-			endDate = endDate + " " + endTime;
-			
-			$("#btnUpdateCamp").text("Updating campaign").prop('disabled', true);
-			
-			$.ajax({
-				url: "functions/update-campaign",
-				type: "POST",
-				data: {
-					campaignID: campaignID,
-					startDate: startDate,
-					endDate: endDate,
-					campaignName: campaignName,
-					publicOrPrivate: publicOrPrivate,
-					category: category,
-					ticketPrice1: ticketPrice1,
-					ticketPrice2: ticketPrice2
-				},
-				dataType: "JSON",
-				success: function (jsonStr) {
-					if(jsonStr.result == "OK") {
-						$(".campaign-name" + campaignID).text(campaignName);
-						//$(".label-sd-ed" +  campaignID + " a").text(leadingZero(dayD) + " / " + leadingZero(dayE));
-						//$(".label-public" + campaignID).text(publicOrPrivate);
-					
-						$(".edit-campaign" + campaignID).data('campaign-name', campaignName);
-						$(".edit-campaign" + campaignID).data('start-date', startDateF);
-						$(".edit-campaign" + campaignID).data('end-date', endDateF);
-						$(".edit-campaign" + campaignID).data('start-time', startTime);
-						$(".edit-campaign" + campaignID).data('end-time', endTime);
-						$(".edit-campaign" + campaignID).data('public', publicOrPrivateF);
-						$(".edit-campaign" + campaignID).data('ticket-price1', ticketPrice1);
-						$(".edit-campaign" + campaignID).data('ticket-price2', ticketPrice2);
-						
-						Swal.fire("Updated", "Campaign has been updated.", "success");
-					}
-					
-					$("#btnUpdateCamp").text("Update Campaign").prop('disabled', false);
+
+		$("#btnUpdateCamp").text("Updating campaign").prop('disabled', true);
+
+		$.ajax({
+			url: "functions/update-campaign",
+			type: "POST",
+			data: {
+				campaignID: campaignID,
+				endDate: endDate,
+				campaignName: campaignName,
+				publicOrPrivate: publicOrPrivate,
+				category: category,
+				ticketPrice1: ticketPrice1,
+				ticketPrice2: ticketPrice2
+			},
+			dataType: "JSON",
+			success: function (jsonStr) {
+				if(jsonStr.result == "OK") {
+					$(".campaign-name" + campaignID).text(campaignName);
+
+					// keep the row's data-attrs in sync (m/d/Y + H:i, like the server renders)
+					var d = new Date(endDate);
+					var endDateF = ("0" + (d.getMonth() + 1)).slice(-2) + "/" + ("0" + d.getDate()).slice(-2) + "/" + d.getFullYear();
+					var endTimeF = ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
+
+					$(".edit-campaign" + campaignID).data('campaign-name', campaignName);
+					$(".edit-campaign" + campaignID).data('end-date', endDateF);
+					$(".edit-campaign" + campaignID).data('end-time', endTimeF);
+					$(".edit-campaign" + campaignID).data('public', publicOrPrivateF);
+					$(".edit-campaign" + campaignID).data('ticket-price1', ticketPrice1);
+					$(".edit-campaign" + campaignID).data('ticket-price2', ticketPrice2);
+
+					Swal.fire("Updated", "Campaign has been updated.", "success").then(function () {
+						// the live countdown on the page is built server-side — reload to reflect the new end date
+						location.reload();
+					});
 				}
-			});
-		}
+				else if(jsonStr.result == "endInPast" || jsonStr.result == "badEndDate") {
+					Swal.fire({ text: "The end date has to be in the future — the raffle is still running.", icon: "error", confirmButtonText: "OK" });
+				}
+
+				$("#btnUpdateCamp").text("Update Campaign").prop('disabled', false);
+			}
+		});
 	});
 	
 	$(document).on('click', '.deleteCampaign', function () {
@@ -420,7 +411,7 @@ $(document).ready(function () {
 										</a>
 									</div>
 									<div class="col-md-2">
-										<a href="../${pageURL}">${totalParticipant} Participant</a>
+										<a href="#" class="js-participants" data-campaign-id="${campaignID}">${totalParticipant} Participants</a>
 									</div>
 									<div class="col-md-3"><a href="../${pageURL}">Time Left <span class="countdown-${campaignID}">0d 0h 0m 0s</span></a></div>
 									<div class="col-md-1" style="display: flex; align-items: center;">
@@ -616,8 +607,8 @@ $(document).ready(function () {
 												</a>
 											</div>
 											<div class="col-md-2">
-												<a href="../${pageURL}">
-													${totalParticipant} Participant
+												<a href="#" class="js-participants" data-campaign-id="${campaignID}">
+													${totalParticipant} Participants
 												</a>
 											</div>
 											<div class="col-md-3">

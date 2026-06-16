@@ -2,10 +2,17 @@
 if(isset( $_SERVER['HTTP_X_REQUESTED_WITH']) && ($_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest')) {
 	session_start();
 	require("../../config/session.php");
+
+	if(!in_array((int)$getUserRole, [1, 3], true)) {
+		http_response_code(403);
+		echo json_encode(["result" => "forbidden"]);
+		exit;
+	}
+
 	
-	$row = $_POST['row'];
-	$currentNo = $_POST['currentNo'];
-	$selectedFilter = mysqli_real_escape_string($con, $_POST['selectedFilter']);
+	$row = max(0, intval($_POST['row'] ?? 0));
+	$currentNo = max(0, intval($_POST['currentNo'] ?? 0));
+	$selectedFilter = mysqli_real_escape_string($con, $_POST['selectedFilter'] ?? '');
 	$rowperpage = 5;
 	$i = $currentNo + 1;
 	
@@ -142,23 +149,12 @@ if(isset( $_SERVER['HTTP_X_REQUESTED_WITH']) && ($_SERVER['HTTP_X_REQUESTED_WITH
 		
 		$qWinner = mysqli_query($con, "SELECT first_name, last_name FROM tbl_ticket WHERE win = 'Y' AND campaignid_fk = '" . $campaignID . "'");
 		$dWinner = mysqli_fetch_array($qWinner);
-		$winner = $dWinner['first_name']." ".$dWinner['last_name'];
+		$winner = $dWinner ? htmlspecialchars(trim($dWinner['first_name']." ".$dWinner['last_name']), ENT_QUOTES, 'UTF-8') : "";
 		
 		$qChk = mysqli_query($con, "SELECT * FROM tbl_payment WHERE campaignid_fk = '" . $campaignID . "'");
-		$dChk = mysqli_fetch_array($qChk);
-		if($dChk['payment_option'] == "") {
-			$paymentOption = "";
-		}
-		else {
-			$paymentOption = $dChk['payment_option'];
-		}
-		
-		if($dChk['total'] == "") {
-			$total = "";
-		}
-		else {
-			$total = "$".$dChk['total'];
-		}
+		$dChk = mysqli_fetch_array($qChk) ?: [];
+		$paymentOption = $dChk['payment_option'] ?? '';
+		$total = (isset($dChk['total']) && $dChk['total'] !== "") ? "$".$dChk['total'] : "";
 		
 		array_push($list, (object)[
 			"campaignID" => $campaignID,

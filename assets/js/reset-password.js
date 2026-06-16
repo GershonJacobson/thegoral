@@ -4,7 +4,7 @@ $(document).ready(function () {
 		var confirmPassword = $("#confirmPassword").val();
 		
 		if(password != "") {
-			if(password.length > 6) {
+			if(password.length >= 6) {
 				$(".minPassword").hide();
 			}
 			else {
@@ -12,7 +12,7 @@ $(document).ready(function () {
 			}
 		}
 		
-		if(password.length > 6) {
+		if(password.length >= 6) {
 			if(confirmPassword != "") {
 				if(password == confirmPassword) {
 					$(".mustSamePassword").hide();
@@ -41,7 +41,7 @@ $(document).ready(function () {
 			}
 		}
 		else {
-			if(password.length > 6 && password == confirmPassword) {
+			if(password.length >= 6 && password == confirmPassword) {
 				$("#btnResetPassword").text("Resetting").prop('disabled', true);
 				
 				$.ajax({
@@ -49,7 +49,8 @@ $(document).ready(function () {
 					type: "POST",
 					data: {
 						email: email,
-						password: password
+						password: password,
+						fpCode: $("#fpCode").val()
 					},
 					dataType: "JSON",
 					success: function (jsonStr) {
@@ -81,7 +82,7 @@ $(document).ready(function () {
 				});
 			}
 			else {
-				if(password.length < 7) {
+				if(password.length < 6) {
 					$("#password").focus();
 				}
 				else if(password != confirmPassword) {

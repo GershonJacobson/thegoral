@@ -6,30 +6,54 @@
 if(isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest') {
     require("../config/db.php");
     session_start();
-    
-    $email = trim(strtolower(mysqli_real_escape_string($con, $_POST['email'] ?? '')));
+
+    $email = trim(strtolower($_POST['email'] ?? ''));
     $password = $_POST['password'] ?? '';
     $rememberMe = intval($_POST['rememberMe'] ?? 0);
-    
+
     if(empty($email) || empty($password)) {
         echo json_encode(["result" => "missingFields"]);
         exit;
     }
-    
-    // Query user
-    $qUser = mysqli_query($con, "SELECT user_id, password FROM tbl_users WHERE email_address = '$email'");
-    
-    if(mysqli_num_rows($qUser) > 0) {
-        $user = mysqli_fetch_array($qUser);
-        
+
+    $stmt = $con->prepare("SELECT user_id, password, active FROM tbl_users WHERE email_address = ? LIMIT 1");
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $qUser = $stmt->get_result();
+
+    if($qUser->num_rows > 0) {
+        $user = $qUser->fetch_assoc();
+
         if(password_verify($password, $user['password'])) {
-            $_SESSION['userGoral'] = $user['user_id'];
-            
-            if($rememberMe === 1) {
-                $cookieExpiry = time() + (60 * 60 * 24 * 7);
-                setcookie("cookielogin[user]", $user['user_id'], $cookieExpiry, "/", "", false, true);
+            if((int)$user['active'] !== 1) {
+                echo json_encode(["result" => "notActive"]);
+                exit;
             }
-            
+
+            session_regenerate_id(true);
+            $_SESSION['userGoral'] = (int)$user['user_id'];
+
+            if($rememberMe === 1) {
+                $selector = bin2hex(random_bytes(12));
+                $validator = bin2hex(random_bytes(32));
+                $validatorHash = hash("sha256", $validator);
+                $expiresAt = date("Y-m-d H:i:s", time() + (60 * 60 * 24 * 7));
+                $createdAt = date("Y-m-d H:i:s");
+
+                $tokenStmt = $con->prepare("INSERT INTO tbl_remember_token (selector, validator_hash, userid_fk, expires_at, created_at) VALUES (?, ?, ?, ?, ?)");
+                $tokenStmt->bind_param("ssiss", $selector, $validatorHash, $user['user_id'], $expiresAt, $createdAt);
+                $tokenStmt->execute();
+                $tokenStmt->close();
+
+                setcookie("goral_remember", $selector . ":" . $validator, [
+                    'expires' => time() + (60 * 60 * 24 * 7),
+                    'path' => '/',
+                    'secure' => isset($_SERVER['HTTPS']),
+                    'httponly' => true,
+                    'samesite' => 'Lax',
+                ]);
+            }
+
             echo json_encode(["result" => "OK"]);
         } else {
             echo json_encode(["result" => "wrongPassword"]);
@@ -37,6 +61,7 @@ if(isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH']
     } else {
         echo json_encode(["result" => "emailNotFound"]);
     }
+    $stmt->close();
 } else {
     header("HTTP/1.1 403 Forbidden");
     exit;

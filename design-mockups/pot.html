@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Goral</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600&family=Frank+Ruhl+Libre:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E0A06; --ink-2:#171009;
+    --cream:#F4ECDD; --muted:#9C8E76; --faint:#6E624E;
+    --g1:#FBE2AC; --g2:#EBBC64; --g3:#C9882C;
+    --line:rgba(244,236,221,.09);
+    --live:#6BD08C;
+    --serif:'Fraunces',Georgia,serif; --sans:'Hanken Grotesk',system-ui,sans-serif; --heb:'Frank Ruhl Libre',serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--ink);color:var(--cream);font-family:var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  /* atmosphere: one warm glow behind the pot + grain */
+  body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:radial-gradient(60% 50% at 50% 42%, rgba(235,188,100,.20), rgba(201,136,44,.05) 38%, transparent 64%);}
+  body::after{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.045;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+  .z{position:relative;z-index:2}
+
+  /* top bar */
+  header{position:fixed;top:0;left:0;right:0;z-index:5;display:flex;align-items:center;justify-content:space-between;
+    padding:24px 34px;}
+  .brand{display:flex;align-items:baseline;gap:10px}
+  .brand b{font-family:var(--serif);font-weight:600;font-size:19px;letter-spacing:.18em;text-transform:uppercase}
+  .brand .h{font-family:var(--heb);font-size:18px;color:var(--g2);opacity:.85}
+  header a.sign{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;letter-spacing:.02em}
+  header a.sign:hover{color:var(--cream)}
+
+  /* HERO — one screen, the pot is everything */
+  .hero{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 24px 60px}
+  .eyebrow{font-size:12px;letter-spacing:.42em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+  .pot{font-family:var(--serif);font-weight:600;font-size:clamp(96px,21vw,300px);line-height:.86;letter-spacing:-.025em;
+    background:linear-gradient(176deg,#FFF1D2 2%,var(--g1) 26%,var(--g2) 58%,var(--g3) 98%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 10px 60px rgba(235,188,100,.30));position:relative;display:inline-block}
+  .pot .sheen{position:absolute;inset:0;background:linear-gradient(100deg,transparent 40%,rgba(255,255,255,.6) 50%,transparent 60%);
+    background-size:260% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;mix-blend-mode:screen;animation:sheen 7s ease-in-out infinite}
+  @keyframes sheen{0%,74%{background-position:-220% 0}86%,100%{background-position:220% 0}}
+  .when{display:inline-flex;align-items:center;gap:9px;margin-top:22px;font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--live);box-shadow:0 0 0 0 rgba(107,208,140,.6);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(107,208,140,.5)}70%{box-shadow:0 0 0 8px rgba(107,208,140,0)}100%{box-shadow:0 0 0 0 rgba(107,208,140,0)}}
+  .buy{position:relative;overflow:hidden;border:0;cursor:pointer;font-family:var(--sans);font-weight:600;font-size:17px;color:#2A1B05;
+    background:linear-gradient(180deg,var(--g1),var(--g2) 55%,var(--g3));padding:19px 46px;border-radius:999px;margin-top:38px;
+    box-shadow:0 14px 40px rgba(201,136,44,.34),inset 0 1px 0 rgba(255,255,255,.55);transition:transform .2s,box-shadow .2s}
+  .buy:hover{transform:translateY(-2px);box-shadow:0 20px 52px rgba(201,136,44,.46),inset 0 1px 0 rgba(255,255,255,.65)}
+  .buy::after{content:"";position:absolute;top:0;left:-60%;width:42%;height:100%;background:linear-gradient(105deg,transparent,rgba(255,255,255,.6),transparent);transform:skewX(-18deg);animation:bs 5.5s ease-in-out infinite}
+  @keyframes bs{0%,72%{left:-60%}86%,100%{left:150%}}
+  .terms{margin-top:20px;font-size:13.5px;color:var(--faint);letter-spacing:.01em}
+  .terms b{color:var(--muted);font-weight:600}
+
+  /* quiet proof line — the only thing below the fold, kept to a whisper */
+  .proof{border-top:1px solid var(--line);padding:30px 24px;display:flex;justify-content:center;gap:34px;flex-wrap:wrap;
+    font-size:14px;color:var(--muted)}
+  .proof span b{color:var(--cream);font-weight:600}
+  .proof .gold{color:var(--g2);font-weight:600}
+  @media(max-width:560px){.proof{gap:14px;flex-direction:column;text-align:center}}
+
+  footer{text-align:center;padding:26px 24px 40px;color:var(--faint);font-size:12.5px;letter-spacing:.02em}
+
+  /* entrance */
+  .r{opacity:0;transform:translateY(16px);animation:r .9s cubic-bezier(.2,.7,.2,1) forwards}
+  @keyframes r{to{opacity:1;transform:none}}
+  .d1{animation-delay:.06s}.d2{animation-delay:.18s}.d3{animation-delay:.34s}.d4{animation-delay:.5s}.d5{animation-delay:.64s}
+  @media (prefers-reduced-motion:reduce){.r{animation:none;opacity:1;transform:none}.sheen,.buy::after{animation:none}}
+</style>
+</head>
+<body>
+
+<header class="z">
+  <div class="brand"><b>The Goral</b><span class="h">הַגּוֹרל</span></div>
+  <a class="sign" href="#">Sign in</a>
+</header>
+
+<main class="hero z">
+  <div class="eyebrow r d1">This week&rsquo;s pot</div>
+  <div class="pot r d2" id="pot">$0<span class="sheen" aria-hidden="true">$4,820</span></div>
+  <div class="when r d3"><span class="dot"></span> Draws Thursday 8:00&nbsp;PM &nbsp;·&nbsp; <span id="left">in&nbsp;3d&nbsp;14h</span></div>
+  <button class="buy r d4">Buy a ticket — $2</button>
+  <div class="terms r d5">Winner takes <b>80%</b> &nbsp;·&nbsp; <b>20%</b> to tzedakah</div>
+</main>
+
+<div class="proof z">
+  <span><b>Last week</b> &nbsp;M. Cohen won <span class="gold">$3,856</span></span>
+  <span><span class="gold">$182,400</span> to tzedakah so far</span>
+  <span><b>1,200+</b> play every week</span>
+</div>
+
+<footer class="z">Run by [Your Org] since 2022 &nbsp;·&nbsp; Drawn live every Thursday &nbsp;·&nbsp; 20% to tzedakah, always</footer>
+
+<script>
+  (function(){var el=document.getElementById('pot'),t=4820,s=null;
+   function f(n){return '$'+Math.floor(n).toLocaleString('en-US')}
+   function step(ts){if(!s)s=ts;var p=Math.min((ts-s)/1500,1),e=1-Math.pow(1-p,3);
+     el.firstChild.textContent=f(t*e);if(p<1)requestAnimationFrame(step);else el.firstChild.textContent=f(t)}
+   requestAnimationFrame(step);})();
+  (function(){function nx(){var n=new Date(),d=new Date(n);d.setHours(20,0,0,0);var a=(4-n.getDay()+7)%7;
+     if(a===0&&n.getHours()>=20)a=7;d.setDate(n.getDate()+a);return d}
+   var t=nx();function tick(){var s=Math.max(0,(t-new Date())/1000),dd=Math.floor(s/86400),hh=Math.floor(s%86400/3600),mm=Math.floor(s%3600/60);
+     document.getElementById('left').textContent='in '+(dd>0?dd+'d ':'')+hh+'h '+mm+'m';}tick();setInterval(tick,1000);})();
+</script>
+</body>
+</html>

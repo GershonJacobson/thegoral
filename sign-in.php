@@ -26,6 +26,8 @@ if($getUserID != "") {
     <link rel="stylesheet" href="assets/css/style.css" />
 	<link rel="stylesheet" href="assets/css/sweetalert.css" />
     <link rel="stylesheet" href="assets/font/fontawesome/css/all.min.css" />
+    <!-- Utility-pages layer (overrides style.css) -->
+    <link rel="stylesheet" href="assets/css/site.css" />
 
     <script src="assets/js/jquery.min.js"></script>
     <script src="assets/js/bootstrap/js/bootstrap.bundle.min.js"></script>
@@ -33,7 +35,7 @@ if($getUserID != "") {
     <script src="assets/js/sign-in.js"></script>
     <script src="assets/font/fontawesome/js/all.min.js"></script>
   </head>
-  <body style="background: #fff">
+  <body class="page-auth">
     <div class="login-container">
       <div class="signup-logo">
         <a href="/"
@@ -113,21 +115,18 @@ if($getUserID != "") {
         </div>
         <div class="row">
           <div class="menu-footer">
-            <a href="http://thegoral.com">Home</a>
-            <a href="live-campaign.html">Live Campaigns</a>
-            <a href="all-campaign.html">All Campaigns</a>
+            <a href="/">Home</a>
+            <a href="/drawing">Drawing Page</a>
+            <a href="/contact">Contact Us</a>
           </div>
         </div>
         <div class="row">
           <div class="text-desc">
-            Lörem ipsum od ohet dilogi. Bell trabel, samuligt, ohöbel utom
-            diska. Jinesade bel när feras redorade i belogi. FAR paratyp <br />
-            i muvåning, och pesask vyfisat. Viktiga poddradio har un mad och
-            inde.
+            The Goral is a weekly community split-the-pot drawing. One ticket can win the pot &mdash; and a share of every pot goes to tzedakah. Winners are drawn and posted publicly each week.
           </div>
         </div>
         <div class="row">
-          <div class="copyright">© 2022 The Goral</div>
+          <div class="copyright">© <?php echo date('Y'); ?> The Goral</div>
         </div>
       </div>
     </div>

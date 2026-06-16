@@ -19,6 +19,8 @@ require("config/session.php");
     <link rel="stylesheet" href="../assets/css/style.css" />
 	<link rel="stylesheet" href="assets/css/sweetalert.css" />
     <link rel="stylesheet" href="../assets/font/fontawesome/css/all.min.css" />
+    <!-- Utility-pages layer (overrides style.css) -->
+    <link rel="stylesheet" href="../assets/css/site.css" />
 
     <script src="../assets/js/jquery.min.js"></script>
     <script src="../assets/js/bootstrap/js/bootstrap.bundle.min.js"></script>
@@ -26,7 +28,7 @@ require("config/session.php");
     <script src="../assets/js/contact.js"></script>
     <script src="../assets/font/fontawesome/js/all.min.js"></script>
   </head>
-  <body style="background: #fff">
+  <body class="page-form">
     <div class="header-ac-bg">
       <div class="container">
         <nav class="navbar navbar-expand-lg bg-body-tertiary static-top">
@@ -59,20 +61,23 @@ require("config/session.php");
           <div class="form-title">Contact Us</div>
         </div>
         <div class="row">
+          <div class="form-subtitle">Questions about the pot, a ticket, or a payment? Send us a message &mdash; we usually reply within a day.</div>
+        </div>
+        <div class="row">
           <div class="col-md col-50">
             <input
               type="text"
-              placeholder="Name"
+              placeholder="Your name"
               id="fullName"
               autocomplete="off"
             />
-			
-			<div class="alert fullNameCantBeEmpty" style="display: none; color: red;">Fullname can't be empty!</div>
+
+			<div class="alert fullNameCantBeEmpty" style="display: none;">Please enter your name.</div>
           </div>
           <div class="col-md col-50">
             <input
               type="text"
-              placeholder="Phone"
+              placeholder="Phone (optional)"
               id="phoneC"
               autocomplete="off"
             />
@@ -80,9 +85,9 @@ require("config/session.php");
         </div>
         <div class="row">
           <div class="col-md">
-            <input type="email" placeholder="Email" id="emailC" />
-			
-			<div class="alert emailNotValid" style="display: none; color: red;">Email is not valid!</div>
+            <input type="email" placeholder="you@example.com" id="emailC" />
+
+			<div class="alert emailNotValid" style="display: none;">Please enter a valid email address.</div>
           </div>
         </div>
         <div class="row">
@@ -91,15 +96,18 @@ require("config/session.php");
               name="textarea"
               id="message"
               cols="30"
-              rows="10"
-              placeholder="Message"
+              rows="7"
+              placeholder="How can we help?"
             ></textarea>
-			
-			<div class="alert messageCantBeEmpty" style="display: none; color: red;">Message can't be empty!</div>
+
+			<div class="alert messageCantBeEmpty" style="display: none;">Please enter a message.</div>
           </div>
         </div>
         <div class="row">
-          <button type="button" class="btnSignup" id="btnSubmit">Submit</button>
+          <button type="button" class="btnSignup" id="btnSubmit">Send Message</button>
+        </div>
+        <div class="row">
+          <div class="contact-alt">or email us directly at <a href="mailto:support@thegoral.com">support@thegoral.com</a></div>
         </div>
       </div>
     </div>
@@ -117,20 +125,17 @@ require("config/session.php");
         <div class="row">
           <div class="menu-footer">
             <a href="/">Home</a>
-            <a href="/live-campaign.html">Live Campaigns</a>
-            <a href="/all-campaign.html">All Campaigns</a>
+            <a href="/drawing">Drawing Page</a>
+            <a class="active" href="/contact">Contact Us</a>
           </div>
         </div>
         <div class="row">
           <div class="text-desc">
-            Lörem ipsum od ohet dilogi. Bell trabel, samuligt, ohöbel utom
-            diska. Jinesade bel när feras redorade i belogi. FAR paratyp <br />
-            i muvåning, och pesask vyfisat. Viktiga poddradio har un mad och
-            inde.
+            The Goral is a weekly community split-the-pot drawing. One ticket can win the pot &mdash; and a share of every pot goes to tzedakah. Winners are drawn and posted publicly each week.
           </div>
         </div>
         <div class="row">
-          <div class="copyright">© 2022 The Goral</div>
+          <div class="copyright">© <?php echo date('Y'); ?> The Goral</div>
         </div>
       </div>
     </div>

@@ -9,7 +9,7 @@ $(document).ready(function () {
 		var phone = $("#phoneC").val();
 		var email = $("#emailC").val();
 		var message = $("#message").val();
-		var filter = /^\d*(?:\.\d{1,2})?$/;
+		var filter = /^(?=(?:\D*\d){7,15}\D*$)[+\d\s().-]+$/;
 		
 		if(fullName != "") {
 			$(".fullNameCantBeEmpty").hide();
@@ -52,7 +52,7 @@ $(document).ready(function () {
 		var phone = $("#phoneC").val();
 		var email = $("#emailC").val();
 		var message = $("#message").val();
-		var filter = /^\d*(?:\.\d{1,2})?$/;
+		var filter = /^(?=(?:\D*\d){7,15}\D*$)[+\d\s().-]+$/;
 		
 		if(fullName == "" || email == "" || message == "") {
 			if(fullName == "") {

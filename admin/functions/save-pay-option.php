@@ -3,6 +3,13 @@ if(isset( $_SERVER['HTTP_X_REQUESTED_WITH']) && ($_SERVER['HTTP_X_REQUESTED_WITH
 	session_start();
 	require("../../config/session.php");
 
+	if(!in_array((int)$getUserRole, [1, 2], true)) {
+		http_response_code(403);
+		echo json_encode(["result" => "forbidden"]);
+		exit;
+	}
+
+
 	$campaignID = mysqli_real_escape_string($con, $_POST['campaignID']);
 	$payOption = mysqli_real_escape_string($con, $_POST['payOption']);
 	$pay = mysqli_real_escape_string($con, $_POST['pay']);

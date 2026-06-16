@@ -1,27 +1,30 @@
 <?php
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
-date_default_timezone_set("America/New_York");
+ini_set('display_errors', 0);
 session_start();
 
 require("config/db.php");
 require("config/session.php");
+require("config/payarc.php");
 
-// DEBUG
-echo "Connection test: ";
-if($con) {
-    echo "Connected ✓<br>";
-} else {
-    echo "NOT connected ✗<br>";
-}
+// The pot currently sitting at /drawing — either the live (open) one, or a
+// just-finished one in its 30-min reveal window (closed but still at /drawing).
+// Used by the hero, checkout modal and emails.
+$qWeekly = mysqli_query($con, "
+	SELECT campaign_id, campaign_name, page_url, DATE_FORMAT(end_date,'%M %d') AS end_date_f, end_date, status FROM tbl_campaign WHERE category = 'weekly' AND page_url = 'drawing' AND (status = 'open' OR status = 'closed') ORDER BY (status = 'open') DESC LIMIT 1
+");
+$dWeekly = mysqli_fetch_array($qWeekly);
 
-$test = mysqli_query($con, "SELECT * FROM tbl_campaign LIMIT 1");
-if($test) {
-    echo "Query works ✓<br>";
-    echo "Rows: " . mysqli_num_rows($test) . "<br>";
-} else {
-    echo "Query failed: " . mysqli_error($con) . "<br>";
-}
+$campaignID = $dWeekly['campaign_id'] ?? '';
+$campaignName = $dWeekly['campaign_name'] ?? 'Weeks Pot';
+$endDate = $dWeekly['end_date'] ?? '';
+$endDateF = $dWeekly['end_date_f'] ?? '';
+$status = $dWeekly['status'] ?? '';
+$pageURL = $dWeekly['page_url'] ?? 'drawing';
+
+// The countdown can hit zero before the cron flips status to "closed". Once the
+// draw time has passed, buying is pointless — send people to the drawing page.
+$drawPassed = ($endDate !== '' && strtotime($endDate) <= time());
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -36,7 +39,9 @@ if($test) {
 	<link href="assets/css/style.css" rel="stylesheet">
 	<link href="assets/css/bootstrap-datetimepicker.css" rel="stylesheet">
 	<link href="assets/font/fontawesome/css/all.min.css" rel="stylesheet">
-	
+	<!-- Homepage revamp layer (overrides style.css; homepage only) -->
+	<link href="assets/css/home.css" rel="stylesheet">
+
 	<script src="assets/js/jquery.min.js">
 	</script>
 	<script src="assets/js/bootstrap/js/bootstrap.bundle.min.js">
@@ -45,8 +50,25 @@ if($test) {
 	</script>
 	<script src="assets/font/fontawesome/js/all.min.js">
 	</script>
-	<script src="../assets/js/jquery.creditCardValidator.js"></script>
 	<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+	<!-- PayArc hosted-fields tokenizer (PCI-safe). Card data never touches our server. -->
+	<script src="<?php echo GORAL_PAYARC_IFRAME_JS; ?>" defer></script>
+	<style id="payarc-styles">
+		.payarc-fields { width: 100%; }
+		.payarc-row-2 { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+		.payarc-row-2 > div { flex: 1; min-width: 90px; min-height: 48px; overflow: hidden; }
+		#card-token-container > div { width: 100%; min-height: 48px; }
+		/* PayArc injects its iframes at a fixed 300x150 — constrain them or the
+		   modal overflows horizontally on phones and gaps vertically. */
+		#card-token-container iframe { width: 100% !important; max-width: 100% !important; height: 48px !important; display: block; }
+		#checkoutModal .modal-body { overflow-x: hidden; }
+		.payarc-input { box-sizing: border-box; width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 14px; }
+		.payarc-label { display: none; }
+		.payarc-container { background: transparent; }
+		.payarc-input-error { border-color: #d9534f; color: #d9534f; }
+		/* PayArc marks fields "success" just for being filled in — misleading. Keep neutral. */
+		.payarc-input-success { border-color: #ced4da; }
+	</style>
 	
 	<script>
 	function formatString(e) {
@@ -124,8 +146,9 @@ if($test) {
 			var lastname = $("#lastnameC").val();
 			var email = $("#emailC").val();
 			var phone = $("#phoneC").val();
-			var filter = /^\d*(?:\.\d{1,2})?$/;
-			
+			// 7-15 digits, allowing +, spaces, dots, dashes and parentheses
+			var filter = /^(?=(?:\D*\d){7,15}\D*$)[+\d\s().-]+$/;
+
 			if(email != "") {
 				if(validateEmail($("#emailC").val())) {
 					$(".emailNotValid").hide();
@@ -137,8 +160,8 @@ if($test) {
 			else {
 				$(".emailNotValid").hide();
 			}
-			
-			if(filter.test(phone)) {
+
+			if(phone == "" || filter.test(phone)) {
 				$(".phoneNotValid").hide();
 			}
 			else {
@@ -146,267 +169,146 @@ if($test) {
 			}
 		});
 
+		// ---- PayArc hosted-fields checkout (card data tokenized in-browser) ----
+		var PAYARC_CLIENT_ID = "<?php echo htmlspecialchars(GORAL_PAYARC_CLIENT_ID, ENT_QUOTES, 'UTF-8'); ?>";
+
+		// Remember a guest's ticket on THIS browser so the drawing page can show
+		// "your number" + win/lose even when they are not logged in.
+		function goralRememberTicket(campaignID, ticketNo) {
+			if (!campaignID || ticketNo == null) return;
+			try {
+				var k = 'goral_tickets_' + campaignID;
+				var list = JSON.parse(localStorage.getItem(k) || '[]');
+				if (list.indexOf(ticketNo) === -1) { list.push(ticketNo); localStorage.setItem(k, JSON.stringify(list)); }
+			} catch (e) {}
+		}
+
+		function goralThanks(jsonStr) {
+			goralRememberTicket(jsonStr.campaignID, jsonStr.ticketNo);
+			$('#checkoutModal').modal('toggle');
+			var drawingURL = '/' + jsonStr.pageURL;
+			Swal.fire({
+				width: '800px',
+				html: '<div class="row"> <div class="col-md-6"> <div class="illus-8"> <img src="assets/images/illu-8.png" alt="" /> </div> </div> <div class="col-md-6"> <div class="row"> <div class="col-md"> <div class="text-tq"> Ticket bought successfully! <p> Check your email for a receipt. <br /> Taking you to the drawing page&hellip; </p> </div> </div> </div> <div class="row"> <div class="col-md"> <div class="text-ticnum"> Your Ticket Number <p>' + jsonStr.ticketNo + '</p> </div> </div> </div> <div class="row"> <div class="col-md"> <div class="btn-drawing-page"> <a href="' + drawingURL + '">Go to Drawing Page</a> </div> </div> </div> </div> </div>',
+				showConfirmButton: false, allowOutsideClick: false, showCloseButton: true
+			});
+			// The second they buy, take them to the drawing page where their ticket shows.
+			setTimeout(function () { window.location.href = drawingURL; }, 2600);
+		}
+
+		function goralResetBuyBtn() { $(".btnBuyTicket").text("Buy Ticket").prop('disabled', false); }
+
+		function goralPayarcLast4(response) {
+			if (response.last_four) return String(response.last_four);
+			if (response.last4) return String(response.last4);
+			if (response.card_number) return String(response.card_number).replace(/\D/g, '').slice(-4);
+			return '';
+		}
+
+		function goralDoPurchase(token, last4, brand) {
+			$.ajax({
+				url: "functions/buy-ticket",
+				type: "POST",
+				data: {
+					campaignID: $("#btnBuyNow").data("campaign-id"),
+					firstName: $("#firstNameC").val(),
+					lastname: $("#lastnameC").val(),
+					email: $("#emailC").val(),
+					phone: $("#phoneC").val(),
+					cardHolderName: $("#cardHolderName").val(),
+					inputPurchase: $("#input-purchase").val(),
+					campaignName: $(".text-dp-input").val(),
+					paymentToken: token,
+					cardLast4: last4 || "",
+					cardBrand: brand || "",
+					saveCard: $("#saveCard").val()
+				},
+				dataType: "JSON",
+				success: function (jsonStr) {
+					if(jsonStr.result == "OK") { goralThanks(jsonStr); }
+					else if(jsonStr.result == "declined" || jsonStr.result == "invalidName") { Swal.fire({ text: jsonStr.message || "Your card was declined.", icon: "error", confirmButtonText: "OK" }); }
+					else { Swal.fire({ text: "Campaign is closed or not available.", icon: "error", confirmButtonText: "OK" }); }
+					goralResetBuyBtn();
+				},
+				error: function () { Swal.fire({ text: "Something went wrong. Please try again.", icon: "error", confirmButtonText: "OK" }); goralResetBuyBtn(); }
+			});
+		}
+
+		var PAYARC_SETTINGS = {
+			FIELDS_CONTAINER: 'card-token-container',
+			INITIATE_PAYMENT: 'initiate-payment',
+			TOKEN_CALLBACK: {
+				success: function (obj) {
+					try {
+						var response = JSON.parse(obj.response);
+						if (response && response.token) {
+							goralDoPurchase(response.token, goralPayarcLast4(response), response.card_type || response.brand || '');
+							return;
+						}
+					} catch (e) {}
+					Swal.fire({ text: "Could not read your card. Please re-check the details.", icon: "error", confirmButtonText: "OK" });
+					goralResetBuyBtn();
+				},
+				error: function (obj) {
+					var msg = "We couldn’t verify this card — please check the number and expiry date.";
+					try {
+						var r = JSON.parse(obj.response);
+						if (r && (r.message || r.error)) { msg = r.message || r.error; }
+					} catch (e) {}
+					$(".ccNotValid").text(msg).show();
+					goralResetBuyBtn();
+				},
+				paymentWindowClosed: function () { goralResetBuyBtn(); }
+			}
+		};
+
+		if (PAYARC_CLIENT_ID && typeof initPayarcTokenizer === 'function') {
+			initPayarcTokenizer(PAYARC_CLIENT_ID, PAYARC_SETTINGS);
+		}
+
+		$('#initiate-payment').click(function () {
+			if (typeof getPayarcToken === 'function') { getPayarcToken(this); }
+		});
+
 		$(".btnBuyTicket").click(function () {
-			var campaignID = $("#btnBuyNow").data("campaign-id");
 			var firstName = $("#firstNameC").val();
 			var lastname = $("#lastnameC").val();
 			var email = $("#emailC").val();
 			var phone = $("#phoneC").val();
-			var filter = /^\d*(?:\.\d{1,2})?$/;
 			var cardHolderName = $("#cardHolderName").val();
-			var cardNumber = $("#cardNumber").val();
-			var expiry = $("#expiry").val();
-			var cvv = $("#cvv").val();
-			var zip = $("#zip").val();
-			var ccValid = $("#cc-valid").val();
-			var purchaseAmount = $(".purchase-amount").data("purchase");
-			var purchasePrice = $(".purchase-amount").data("price");
-			var inputPurchase = $("#input-purchase").val();
-			var inputPrice = $("#input-price").val();
-			var campaignName = $(".text-dp-input").val();
-			var saveCard = $("#saveCard").val();
-			
-			if(firstName == "" || lastname == "" || email == "" || phone == "" || cardHolderName == "" || cardNumber == "" || expiry == "" || cvv == "" || zip == "") {
-				if(firstName == "") {
-					$("#firstNameC").focus();
-				}
-				else if(lastname == "") {
-					$("#lastnameC").focus();
-				}
-				else if(email == "") {
-					$("#emailC").focus();
-				}
-				else if(phone == "") {
-					$("#phoneC").focus();
-				}
-				else if(cardHolderName == "") {
-					$("#cardHolderName").focus();
-				}
-				else if(cardNumber == "") {
-					$("#cardNumber").focus();
-				}
-				else if(expiry == "") {
-					$("#expiry").focus();
-				}
-				else if(cvv == "") {
-					$("#cvv").focus();
-				}
-				else if(zip == "") {
-					$("#zip").focus();
-				}
-			}
-			else {
-				if(validateEmail($("#emailC").val()) && filter.test(phone) && ccValid == 1) {
-					var array = cardList.toString().split(",");
+			var filter = /^(?=(?:\D*\d){7,15}\D*$)[+\d\s().-]+$/;
 
-					for(var i in array){
-						array[i]
-					}
-					
-					if(jQuery.inArray(cardNumber, array) != -1) {
-						$(".btnBuyTicket").text("Processing").prop('disabled', true);
-						
-						$.ajax({
-							url: "functions/buy-ticket",
-							type: "POST",
-							data: {
-								campaignID: campaignID,
-								firstName: firstName,
-								lastname: lastname,
-								email: email,
-								phone: phone,
-								cardHolderName: cardHolderName,
-								cardNumber: cardNumber,
-								expiry: expiry,
-								cvv: cvv,
-								zip: zip,
-								inputPurchase: inputPurchase,
-								inputPrice: inputPrice,
-								campaignName: campaignName
-							},
-							dataType: "JSON",
-							success: function (jsonStr) {
-								if(jsonStr.result == "OK") {
-									$("#cardHolderName, #cardNumber, #expiry, #cvv, #zip, #cc-valid, #input-purchase, #input-price").val("");
-									
-									$('#checkoutModal').modal('toggle');
-									$(".btn-filter").text("Saved Card");
-									
-									Swal.fire({
-										width: '800px',
-										html: '<div class="row"> <div class="col-md-6"> <div class="illus-8"> <img src="assets/images/illu-8.png" alt="" /> </div> </div> <div class="col-md-6"> <div class="row"> <div class="col-md"> <div class="text-tq"> Thanks! <p> Check your email to receive a receipt! <br /> And to see when the raffle will be drawn </p> </div> </div> </div> <div class="row"> <div class="col-md"> <div id="countdown-tq"> <div id="tiles-tq"><span>01</span><span>23</span><span>59</span><span>40</span></div> <div class="labels-tq"> <li>Days</li> <li>Hours</li> <li>Mins</li> <li>Secs</li> </div> </div> </div> </div> <div class="row"> <div class="col-md"> <div class="text-ticnum"> Ticket Number <p>' + jsonStr.ticketNo + '</p> </div> </div> </div> <div class="row"> <div class="col-md"> <div class="btn-drawing-page"> <a href="<?php echo $pageURL; ?>">Go to Drawing Page</a> </div> </div> </div> <div class="row"> <div class="col-md"> <div class="text-raffle">Share This Raffle</div> </div> </div> <div class="row"> <div class="col-md"> <div class="sosmed"> <img src="../assets/images/fb.png" alt="" /><img src="../assets/images/ig.png" alt="" /><img src="../assets/images/wa.png" alt="" /> </div> </div> </div> </div> </div>',
-										showConfirmButton: false,
-										allowOutsideClick: false,
-										showCloseButton: true
-									}).then((result) => {
-										if (result.isConfirmed) {
-										} 
-									});
-								}
-								else {
-									Swal.fire({
-										text: "Campaign is closed/not exist!",
-										icon: "error",
-										confirmButtonText: "OK",
-									});
-								}
-								
-								$(".btnBuyTicket").text("Buy Ticket").prop('disabled', false);
-							}
-						});
-					} else {
-						Swal.fire({
-						  title: 'Confirmation',
-						  text: "Would you like to save this card for faster future checkouts?",
-						  showDenyButton: true,
-						  showCancelButton: true,
-						  confirmButtonText: 'Yes',
-						  denyButtonText: "No",
-						}).then((result) => {
-						  /* Read more about isConfirmed, isDenied below */
-						  if (result.isConfirmed) {
-							
-							$("#saveCard").val("Y");
-							
-							$(".btnBuyTicket").text("Processing").prop('disabled', true);
-							
-							var saveCard = $("#saveCard").val();
-						
-						$.ajax({
-							url: "functions/buy-ticket",
-							type: "POST",
-							data: {
-								campaignID: campaignID,
-								firstName: firstName,
-								lastname: lastname,
-								email: email,
-								phone: phone,
-								cardHolderName: cardHolderName,
-								cardNumber: cardNumber,
-								expiry: expiry,
-								cvv: cvv,
-								zip: zip,
-								inputPurchase: inputPurchase,
-								inputPrice: inputPrice,
-								campaignName: campaignName,
-								saveCard: saveCard
-							},
-							dataType: "JSON",
-							success: function (jsonStr) {
-								if(jsonStr.result == "OK") {
-									$("#cardHolderName, #cardNumber, #expiry, #cvv, #zip, #cc-valid, #input-purchase, #input-price").val("");
-									
-									$('#checkoutModal').modal('toggle');
-									$(".btn-filter").text("Saved Card");
-									
-									Swal.fire({
-										width: '800px',
-										html: '<div class="row"> <div class="col-md-6"> <div class="illus-8"> <img src="assets/images/illu-8.png" alt="" /> </div> </div> <div class="col-md-6"> <div class="row"> <div class="col-md"> <div class="text-tq"> Thanks! <p> Check your email to receive a receipt! <br /> And to see when the raffle will be drawn </p> </div> </div> </div> <div class="row"> <div class="col-md"> <div id="countdown-tq"> <div id="tiles-tq"><span>01</span><span>23</span><span>59</span><span>40</span></div> <div class="labels-tq"> <li>Days</li> <li>Hours</li> <li>Mins</li> <li>Secs</li> </div> </div> </div> </div> <div class="row"> <div class="col-md"> <div class="text-ticnum"> Ticket Number <p>' + jsonStr.ticketNo + '</p> </div> </div> </div> <div class="row"> <div class="col-md"> <div class="btn-drawing-page"> <a href="<?php echo $pageURL; ?>">Go to Drawing Page</a> </div> </div> </div> <div class="row"> <div class="col-md"> <div class="text-raffle">Share This Raffle</div> </div> </div> <div class="row"> <div class="col-md"> <div class="sosmed"> <img src="../assets/images/fb.png" alt="" /><img src="../assets/images/ig.png" alt="" /><img src="../assets/images/wa.png" alt="" /> </div> </div> </div> </div> </div>',
-										showConfirmButton: false,
-										allowOutsideClick: false,
-										showCloseButton: true
-									}).then((result) => {
-										if (result.isConfirmed) {
-										} 
-									});
-								}
-								else {
-									Swal.fire({
-										text: "Campaign is closed/not exist!",
-										icon: "error",
-										confirmButtonText: "OK",
-									});
-								}
-								
-								$(".btnBuyTicket").text("Buy Ticket").prop('disabled', false);
-							}
-						});
-							
-						  } else if (result.isDenied) {
-							
-							$("#saveCard").val("");
-							$(".btnBuyTicket").click();
-						  }
-						})
-					} 
-				}
-				else {
-					if(!validateEmail($("#emailC").val())) {
-						$("#emailC").focus();
-					}
-					else if(!filter.test(phone)) {
-						$("#phoneC").focus();
-					}
-					else if(ccValid == 0) {
-						$("#cardNumber").focus();
-					}
-				}
+			if(firstName == "") { $("#firstNameC").focus(); return; }
+			if(lastname == "") { $("#lastnameC").focus(); return; }
+
+			// Names must look like names — winners are announced publicly by name.
+			var nameRule = /^\p{L}[\p{L} .'-]{0,48}\p{L}$/u;
+			if(!nameRule.test(firstName) || !nameRule.test(lastname)) {
+				Swal.fire({ text: "Please enter your real first and last name — winners are announced by name.", icon: "error", confirmButtonText: "OK" });
+				$(!nameRule.test(firstName) ? "#firstNameC" : "#lastnameC").focus();
+				return;
 			}
+
+			if(email == "" || !validateEmail(email)) { $("#emailC").focus(); $(".emailNotValid").fadeIn(); return; }
+			if(phone == "" || !filter.test(phone)) { $("#phoneC").focus(); return; }
+			if(cardHolderName == "") { $("#cardHolderName").focus(); return; }
+
+			if (!PAYARC_CLIENT_ID || typeof initPayarcTokenizer === 'undefined') {
+				Swal.fire({ text: "Payments aren't switched on yet. Please try again shortly.", icon: "error", confirmButtonText: "OK" });
+				return;
+			}
+
+			$(".btnBuyTicket").text("Processing").prop('disabled', true);
+			$('#initiate-payment').click(); // hand off to PayArc to tokenize -> TOKEN_CALLBACK.success
 		});
-		
+
 		$(".cc").click(function () {
 			$(".credit-card-option").fadeIn();
 		});
-		
-		const acceptedCards = [
-			'amex',
-			// 'dankort',
-			// 'diners_club_carte_blanche',
-			'diners_club_international',
-			'discover',
-			// 'jcb',
-			// 'laser',
-			// 'maestro',
-			'mastercard',
-			// 'uatp',
-			'visa',
-			// 'visa_electron',
-		  ];
 
-		  const $ccNumber = $('#cardNumber');
-		  const $ccNumberClear = $('#cardNumber-clear');
-		  const $ccNumberTest = $('.cardNumber-test');
-
-		  $ccNumber.on('input', function() {
-			ccNumberValidate($(this).val());
-		  });
-
-		  $ccNumberClear.on('click', function() {
-			ccNumberValidate('');
-		  });
-		  
-		  $ccNumberTest.on('click', function() {
-			ccNumberValidate($(this).text());
-		  });
-
-		  const ccNumberValidate = (ccNumber = '') => {
-			$ccNumber.val(ccNumber);
-			$ccNumber.removeClass('error success');
-
-			if (ccNumber !== '') {
-				const ccNumberClass = $ccNumber.validateCreditCard({accept: acceptedCards}).valid ? 'success' : 'error';
-				$ccNumber.addClass(ccNumberClass);
-				
-				if($ccNumber.validateCreditCard({accept: acceptedCards}).valid == true) {
-					$(".ccNotValid").hide();
-					$("#cc-valid").val(1);
-				}
-				else {
-					$(".ccNotValid").show();
-					$("#cc-valid").val(0);
-				}
-			}
-		  };
-		  
-		$('#cvv, #zip, #cardNumber, #expiry').on("cut copy paste",function(e) {
-		  e.preventDefault();
+		$("#saveCardChk").on("change", function () {
+			$("#saveCard").val(this.checked ? "Y" : "");
 		});
-		  
-		$("#cvv, #zip, #cardNumber").keypress(function (e) {
-		 if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57)) {
-		  return false;
-		}
-	   });
 	});
 	</script>
 </head>
@@ -421,30 +323,18 @@ if($test) {
 				</div>
 			</nav>
 			
-			<?php
-			$qWeekly = mysqli_query($con, "
-				SELECT campaign_id, campaign_name, DATE_FORMAT(end_date,'%M %d') AS end_date_f, end_date, status FROM tbl_campaign WHERE category = 'weekly' AND status = 'open'
-			");
-			$dWeekly = mysqli_fetch_array($qWeekly);
-			
-			$campaignID = $dWeekly['campaign_id'];
-			$endDate = $dWeekly['end_date'];
-			$endDateF = $dWeekly['end_date_f'];
-			$status = $dWeekly['status'];
-			?>
-			
 			<div class="row">
-				<div class="text-dp"><?php echo $dWeekly['campaign_name']; ?></div>
+				<div class="text-dp"><?php echo htmlspecialchars($campaignName, ENT_QUOTES, 'UTF-8'); ?></div>
+				<input type="hidden" class="text-dp-input" value="<?php echo htmlspecialchars($campaignName, ENT_QUOTES, 'UTF-8'); ?>"/>
 			
-				<div class="weeks-pot" style="width: 200px;">
-					<div class="blinking-green" style="margin-right: 10px;"></div>
-				
+				<div class="weeks-pot">
+					<div class="blinking-green"></div>
+
 					<?php
 					$qAccumulateParticipant = mysqli_query($con, "SELECT DISTINCT email AS total_participants FROM tbl_ticket WHERE campaignid_fk = '" . $campaignID . "'");
-					
-					echo mysqli_num_rows($qAccumulateParticipant);
+					$totalParticipants = mysqli_num_rows($qAccumulateParticipant);
+					echo $totalParticipants . " " . ($totalParticipants == 1 ? "Participant" : "Participants");
 					?>
-					Participant
 				</div>
 			</div>
 			<div class="row">
@@ -457,10 +347,10 @@ if($test) {
 				?>
 				</h1>
 			</div>
-			<div style="border: 0.568125px solid #707070"></div>
+			<div class="hero-divider"></div>
 			<div class="row">
 				<div class="col-md" style="display: flex; flex-flow: column; align-items: center;">
-					<div class="title-draw" style="color:#fff;">Draw in :</div>
+					<div class="title-draw"><?php echo $drawPassed ? "This week&rsquo;s winner is in" : "Draws in"; ?></div>
 				
 					<div id="countdown" class="countdown-<?php echo $campaignID; ?>">
 					<div id="tiles"><span>0</span><span>0</span><span>0</span><span>0</span></div>
@@ -476,28 +366,25 @@ if($test) {
 				</div>
 			</div>
 			<div class="row">
-				<?php
-				if($status == "open") {
-				?>
-					<button class="btnBuyNow" data-target="#checkoutModal" data-toggle="modal" id="btnBuyNow" type="button" data-campaign-id="<?php echo $campaignID; ?>">Buy Ticket Now</button>
-				<?php
-				}
-				?>
+				<?php if($status == "open") { ?>
+					<button class="btnBuyNow" data-target="#checkoutModal" data-toggle="modal" id="btnBuyNow" type="button" data-campaign-id="<?php echo $campaignID; ?>"<?php if($drawPassed) echo ' style="display:none;"'; ?>>Buy Ticket Now</button>
+				<?php } ?>
+				<?php if($campaignID !== '') { ?>
+					<a class="btnBuyNow btn-go-drawing" id="goDrawingBtn" href="<?php echo htmlspecialchars($pageURL, ENT_QUOTES, 'UTF-8'); ?>"<?php if(!$drawPassed) echo ' style="display:none;"'; ?>>Go to Drawing Page</a>
+				<?php } ?>
 			</div>
-			
 			<script>
 			var countdowns = [{
 				campaignID: "<?php echo $campaignID; ?>",
-				countdownDate: new Date("<?php echo $endDate; ?>".replace(" ", "T")).getTime()
+				countdownDate: <?php echo $endDate ? strtotime($endDate) * 1000 : 0; ?>
 			}];
-			
+
 			$(document).ready(function () {
 				var timer = setInterval(function() {
-					// Get todays date and time
-					
-					var d = new Date(new Date().toLocaleString("en-US", {timeZone: "America/New_York"}));
-					var now = d.getTime();
-					
+					// Server emits the draw time as an absolute epoch (server TZ is
+					// America/New_York), so this is correct in every browser zone.
+					var now = Date.now();
+
 					var index = countdowns.length - 1;
 					// we have to loop backwards since we will be removing
 					// countdowns when they are finished
@@ -515,11 +402,13 @@ if($test) {
 							(distance % (1000 * 60 * 60)) / (1000 * 60));
 						var seconds = Math.floor((distance % (1000 * 60)) / 1000);
 						//var timerElement = document.getElementById("race" + countdown.id);
-						
-						
-						var abc = "<div id='tiles'><span>" + days + "</span><span>" + hours + "</span><span>" + minutes + "</span><span>" + seconds + "</span></div><div class='labels'><li>Days</li><li>Hours</li><li>Mins</li><li>Secs</li></div>";
-						
-						var abc2 = "<div id='tiles-tq'><span>" + days + "</span><span>" + hours + "</span><span>" + minutes + "</span><span>" + seconds + "</span></div><div class='labels-tq'><li>Days</li><li>Hours</li><li>Mins</li><li>Secs</li></div>";
+
+						// Two-digit tiles read better and keep the tile widths steady.
+						var pad = function (n) { n = Math.max(0, n); return (n < 10 ? "0" : "") + n; };
+
+						var abc = "<div id='tiles'><span>" + pad(days) + "</span><span>" + pad(hours) + "</span><span>" + pad(minutes) + "</span><span>" + pad(seconds) + "</span></div><div class='labels'><li>Days</li><li>Hours</li><li>Mins</li><li>Secs</li></div>";
+
+						var abc2 = "<div id='tiles-tq'><span>" + pad(days) + "</span><span>" + pad(hours) + "</span><span>" + pad(minutes) + "</span><span>" + pad(seconds) + "</span></div><div class='labels-tq'><li>Days</li><li>Hours</li><li>Mins</li><li>Secs</li></div>";
 						
 						$(".countdown-" + countdown.campaignID).html(abc);
 						$("#countdown-tq").html(abc2);
@@ -529,7 +418,10 @@ if($test) {
 							// this timer is done, remove it
 							$(".countdown-" + countdown.campaignID).text("DRAW COMPLETED");
 							$("#countdown-tq").html("DRAW COMPLETED");
-							
+							// Buying is over — swap the hero CTA to the drawing page.
+							$("#btnBuyNow").hide();
+							$("#goDrawingBtn").show();
+
 							clearInterval(timer);
 						} else {
 							//timerElement.innerHTML =  hours + "h " + minutes + "m " + seconds + "s ";
@@ -550,53 +442,34 @@ if($test) {
 		<div class="container">
 			<div class="row">
 				<div class="title">
-					3 simple steps !
+					How it works
 				</div>
 			</div>
-			<div class="row">
-				<div class="col-md">
+			<div class="row steps-row">
+				<div class="col-md step-col">
 					<div class="illus-2 text-center">
-						<!-- <img alt="" src="assets/images/illu-2.png"> -->
 						<lottie-player src="assets/animation/Anim-02.json" background="Transparent" speed="1" loop autoplay></lottie-player>
 					</div>
-				</div>
-				<div class="col-md">
 					<div class="text-subtitle">
-						1. Buy
+						<span class="step-no">01</span>Buy
 						<p>Purchase a ticket and receive a ticket number for a chance to take home half of the pot.</p>
 					</div>
 				</div>
-			</div>
-		</div>
-	</div>
-	<div class="section-three">
-		<div class="container">
-			<div class="row row-check">
-				<div class="col-md">
-					<div class="text-subtitle">
-						2. Check
-						<p>At the end of the countdown, we will announce the winning number.</p>
-					</div>
-				</div>
-				<div class="col-md">
+				<div class="col-md step-col">
 					<div class="illus-3 text-center">
 						<lottie-player src="assets/animation/Anim-03.json" background="Transparent" speed="1" loop autoplay></lottie-player>
 					</div>
+					<div class="text-subtitle">
+						<span class="step-no">02</span>Check
+						<p>At the end of the countdown, we will announce the winning number.</p>
+					</div>
 				</div>
-			</div>
-		</div>
-	</div>
-	<div class="section-four">
-		<div class="container">
-			<div class="row">
-				<div class="col-md">
+				<div class="col-md step-col">
 					<div class="illus-4 text-center">
 						<lottie-player src="assets/animation/Anim-04.json" background="Transparent" speed="1" loop autoplay></lottie-player>
 					</div>
-				</div>
-				<div class="col-md">
 					<div class="text-subtitle">
-						3. Collect
+						<span class="step-no">03</span>Collect
 						<p>If you are the winner, you can easily collect your prize through our platform. Congratulations, you've won!</p>
 					</div>
 				</div>
@@ -618,11 +491,12 @@ if($test) {
 					
 					<div style="margin-top: 15px;">
 						<table class="tbl-raffle">
-							<tr style="font-size:12px; font-family:Suwannaphum;">
+							<tr>
 								<th></th>
 								<th></th>
 								<th>Date</th>
 								<th>Participants</th>
+								<th>Winner</th>
 								<th>Pot</th>
 							</tr>
 							<?php
@@ -649,34 +523,52 @@ if($test) {
 								LEFT JOIN tbl_ticket ON tbl_campaign.campaign_id = tbl_ticket.campaignid_fk 
 								WHERE
 								tbl_campaign.category = 'weekly' AND
+								tbl_campaign.status = 'closed' AND
+								tbl_campaign.page_url != 'drawing' AND
 								tbl_ticket.total_price != 0
-								GROUP BY tbl_campaign.campaign_id 
-								ORDER BY tbl_campaign.status DESC, rating DESC limit 5
+								GROUP BY tbl_campaign.campaign_id
+								ORDER BY tbl_campaign.end_date DESC limit 5
 							");
 							
 							while($dWeeklyRaffles = mysqli_fetch_array($qWeeklyRaffles)) {
-								$campaignID = $dWeeklyRaffles['campaign_id'];
-								$endDate = $dWeeklyRaffles['end_date'];
-								$status = $dWeeklyRaffles['status'];
+								// NB: deliberately NOT $campaignID — that still holds the
+								// live weekly's id, which the checkout modal below uses.
+								$rowCampaignID = $dWeeklyRaffles['campaign_id'];
+								$rowStatus = $dWeeklyRaffles['status'];
+
+								// Open weeklies live at /drawing; closed ones were archived
+								// by the cron to /drawing<N>, so page_url works for both.
+								$rowURL = htmlspecialchars($dWeeklyRaffles['page_url'], ENT_QUOTES, 'UTF-8');
+
+								$qRowWinner = mysqli_query($con, "SELECT first_name, last_name FROM tbl_ticket WHERE campaignid_fk = '" . $rowCampaignID . "' AND win = 'Y' LIMIT 1");
+								if($qRowWinner && ($dRowWinner = mysqli_fetch_array($qRowWinner))) {
+									$wFirst = trim($dRowWinner['first_name'] ?? '');
+									$wInitial = strtoupper(substr(trim($dRowWinner['last_name'] ?? ''), 0, 1));
+									$rowWinner = htmlspecialchars($wFirst . ($wInitial !== '' ? ' ' . $wInitial . '.' : ''), ENT_QUOTES, 'UTF-8');
+								}
+								else {
+									$rowWinner = '&mdash;';
+								}
 								?>
-								<tr style="border-top: 1px solid #646464;">
+								<tr class="raffle-row" data-href="<?php echo $rowURL; ?>">
 								<td><div class="text-number"><?php echo $i; ?></div></td>
 								<td><img style="width:28px" alt="" src="assets/images/user-icon.png"></td>
 								<td><span class="text-date"><?php echo $dWeeklyRaffles['end_date']; ?></span></td>
-								
+
 								<td><span class="text-date">
 									<?php
-									$qAccumulateParticipant = mysqli_query($con, "SELECT DISTINCT email AS total_participants FROM tbl_ticket WHERE campaignid_fk = '" . $dWeeklyRaffles['campaign_id'] . "'");
-									
+									$qAccumulateParticipant = mysqli_query($con, "SELECT DISTINCT email AS total_participants FROM tbl_ticket WHERE campaignid_fk = '" . $rowCampaignID . "'");
+
 									echo mysqli_num_rows($qAccumulateParticipant);
 									?>
 								</span></td>
+								<td><span class="text-winner"><?php echo $rowWinner; ?></span></td>
 								<td>
 									<div class="text-price">
 										$<?php
-										$qAccumulateTicket = mysqli_query($con, "SELECT COALESCE(SUM(total_price), 0) AS total_accumulate FROM tbl_ticket WHERE campaignid_fk = '" . $dWeeklyRaffles['campaign_id'] . "'");
+										$qAccumulateTicket = mysqli_query($con, "SELECT COALESCE(SUM(total_price), 0) AS total_accumulate FROM tbl_ticket WHERE campaignid_fk = '" . $rowCampaignID . "'");
 										$dAccumulateTicket = mysqli_fetch_array($qAccumulateTicket);
-										
+
 										echo $dAccumulateTicket['total_accumulate'];
 										?>
 									</div>
@@ -687,29 +579,18 @@ if($test) {
 							}
 							?>
 						</table>
+
+						<script>
+						$(function () {
+							$(".raffle-row").on("click", function () {
+								window.location.href = $(this).data("href");
+							});
+						});
+						</script>
 					</div>
 				</div>
 			</div>
 		</div>
-	</div>
-	<div class="section-six text-center">
-		<div class="title">
-			Make your own campaign
-		</div>
-		
-		<?php
-		if($getUserID != "") {
-		?>
-			<button data-toggle="modal" data-target="#createCampaignModal" id="btnGetStarted2" class="btn-get-started">Get Started</button>
-		<?php
-		}
-		else {
-		?>
-			<a href="sign-in" class="btn-get-started" style="text-decoration:none">Get Started</a>
-		<?php
-		}
-		?>
-		
 	</div>
 	<div class="footer">
 		<div class="container">
@@ -720,18 +601,19 @@ if($test) {
 			</div>
 			<div class="row">
 				<div class="menu-footer">
-					<a class="active" href="http://thegoral.com">Home</a> <a href="live-campaign">Live Campaigns</a> <a href="all-campaign">All Campaigns</a>
+					<a class="active" href="/">Home</a>
+					<a href="drawing">Drawing Page</a>
+					<a href="contact">Contact Us</a>
 				</div>
 			</div>
 			<div class="row">
 				<div class="text-desc">
-					Lörem ipsum od ohet dilogi. Bell trabel, samuligt, ohöbel utom diska. Jinesade bel när feras redorade i belogi. FAR paratyp<br>
-					i muvåning, och pesask vyfisat. Viktiga poddradio har un mad och inde.
+					The Goral is a weekly community split-the-pot drawing. One ticket can win the pot &mdash; and a share of every pot goes to tzedakah. Winners are drawn and posted publicly each week.
 				</div>
 			</div>
 			<div class="row">
 				<div class="copyright">
-					© 2022 The Goral
+					© <?php echo date('Y'); ?> The Goral
 				</div>
 			</div>
 		</div>
@@ -748,14 +630,7 @@ if($test) {
 					</div>
 					<div class="row">
 						<?php
-						$qWeekly = mysqli_query($con, "
-							SELECT campaign_id, campaign_name, DATE_FORMAT(end_date,'%M %d') AS end_date_f, end_date, status FROM tbl_campaign WHERE category = 'weekly' AND status = 'open'
-						");
-						$dWeekly = mysqli_fetch_array($qWeekly);
-						
-						$campaignIDWeekly = $dWeekly['campaign_id'];
-						
-						$qTicketPrice = mysqli_query($con, "SELECT * FROM tbl_ticket_price WHERE campaignid_fk = '" . $campaignIDWeekly . "'");
+						$qTicketPrice = mysqli_query($con, "SELECT * FROM tbl_ticket_price WHERE campaignid_fk = '" . mysqli_real_escape_string($con, $campaignID) . "'");
 						if(mysqli_num_rows($qTicketPrice) > 0) {
 							$dTicketPrice = mysqli_fetch_array($qTicketPrice);
 							
@@ -787,28 +662,28 @@ if($test) {
 					<div class="row">
 						<div class="col-md col-50-bn">
 							<div class="form-group">
-								<label for="firstNameC">First Name<small style="color: red">*</small></label> <input autocomplete="off" class="form-control" id="firstNameC" type="text" value="<?php echo $getFirstName; ?>">
+								<label for="firstNameC">First Name<small style="color: red">*</small></label> <input autocomplete="off" class="form-control" id="firstNameC" type="text" value="<?php echo htmlspecialchars($getFirstName, ENT_QUOTES, 'UTF-8'); ?>">
 							</div>
 						</div>
 						<div class="col-md col-50-bn">
 							<div class="form-group">
-								<label for="lastnameC">Last Name<small style="color: red">*</small></label> <input autocomplete="off" class="form-control" id="lastnameC" type="text" value="<?php echo $getLastName; ?>">
+								<label for="lastnameC">Last Name<small style="color: red">*</small></label> <input autocomplete="off" class="form-control" id="lastnameC" type="text" value="<?php echo htmlspecialchars($getLastName, ENT_QUOTES, 'UTF-8'); ?>">
 							</div>
 						</div>
 					</div>
 					<div class="row">
 						<div class="col-md col-50-bn">
 							<div class="form-group">
-								<label for="emailC">Email<small style="color: red">*</small></label> <input autocomplete="off" class="form-control" id="emailC" type="text" value="<?php echo $getEmailAddress; ?>">
+								<label for="emailC">Email<small style="color: red">*</small></label> <input autocomplete="off" class="form-control" id="emailC" type="text" value="<?php echo htmlspecialchars($getEmailAddress, ENT_QUOTES, 'UTF-8'); ?>">
 								
-								<div class="emailNotValid" style="color: red; display: none;">Email is not valid</div>
+								<div class="emailNotValid" style="display: none;">Please enter a valid email address.</div>
 							</div>
 						</div>
 						<div class="col-md col-50-bn">
 							<div class="form-group">
-								<label for="phoneC">Phone<small style="color: red">*</small></label> <input autocomplete="off" class="form-control" id="phoneC" type="text" value="<?php echo $getPhone; ?>">
+								<label for="phoneC">Phone<small style="color: red">*</small></label> <input autocomplete="off" class="form-control" id="phoneC" type="text" value="<?php echo htmlspecialchars($getPhone, ENT_QUOTES, 'UTF-8'); ?>">
 								
-								<div class="phoneNotValid" style="color: red; display: none;">Phone is not valid</div>
+								<div class="phoneNotValid" style="display: none;">Please enter a valid phone number.</div>
 							</div>
 						</div>
 					</div>
@@ -822,45 +697,8 @@ if($test) {
 							Payment Method
 						</div>
 					</div>
-					<div class="row mb-3">
-						<div class="col-md">
-							<div class="filter-by-container" style="text-align: right;">
-								<button class="btn dropdown-toggle btn-filter" type="button" id="dropdownMenuClickableInside" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="background: #e7e7e7;">
-									Saved Card
-								</button>
-								
-								<ul class="dropdown-menu" aria-labelledby="dropdownMenuClickableInside" style="box-shadow: 0 5px 5px -5px #333; width: 80px;">
-									<?php
-									$qCard = mysqli_query($con, "SELECT card_id, card_name, card_number AS card_number2, RIGHT(card_number,4) as card_number, expired, cvv, zip FROM tbl_card WHERE userid_fk = '$getUserID' ORDER BY card_number ASC");
-									while($dCard = mysqli_fetch_array($qCard)) {
-										array_push($cardList, (object)[
-											"cardNumber" => $cardList['card_number']
-										]);
-										?>
-										<script>
-										cardList.push(<?php echo $dCard['card_number2']; ?>);
-										</script>
-										
-										<li>
-											<div class="label-radio card-list"
-											id="<?php echo $dCard['card_id']; ?>"
-											data-card-number="<?php echo $dCard['card_number']; ?>"
-											data-card-number2="<?php echo $dCard['card_number2']; ?>"
-											data-card-name="<?php echo $dCard['card_name']; ?>"
-											data-card-expired="<?php echo $dCard['expired']; ?>"
-											data-card-cvv="<?php echo $dCard['cvv']; ?>"
-											data-zip="<?php echo $dCard['zip']; ?>"
-											><label for="pmmtl"> Card <?php echo $dCard['card_number']; ?></label></div>
-											<div class="input-radio"><input type="radio" class="radio" name="filter" id="pmmtl" value="pmmtl" style="display: none;"/></div>
-										</li>
-									<?php
-									}
-									?>
-								</ul>
-							</div>
-						</div>
-					</div>
-					<div class="row" style="text-align: center; justify-content: center;">
+					<!-- Saved-card vault returns in the wallet/token phase. Card-first MVP collects the card via the PayArc iframe each checkout. -->
+						<div class="row" style="text-align: center; justify-content: center;">
 						<div class="col-md col-25-bn cc">
 							<div class="box-pay mb-4"><img alt="" src="assets/images/cc.png"></div>
 						</div>
@@ -872,34 +710,23 @@ if($test) {
 						</div>
 					</div>
 					<div class="row credit-card-option">
-						<div class="col-md-6 col-50-bn">
+						<div class="col-md-12 col-50-bn">
 							<div class="form-group">
 								<label for="cardHolderName">Card Holder Name<small style="color: red">*</small></label> <input autocomplete="off" class="form-control" id="cardHolderName" placeholder="Jack" type="text">
 							</div>
 						</div>
-						<div class="col-md-6 col-50-bn">
-							<div class="form-group">
-								<label for="cardNumber">Card Number<small style="color: red">*</small></label> <input autocomplete="off" class="form-control" id="cardNumber" placeholder="1234" type="text">
-								
-								<input type="hidden" id="cc-valid" value="0"/>
-								
-								<div class="ccNotValid" style="color: red; display: none; font-size: 12px;">Number does not exist</div>
+						<!-- PayArc hosted fields. Card data never touches our server. -->
+						<div class="col-md-12">
+							<div id="card-token-container" class="payarc-fields">
+								<div id="pa-card-number" data-payarc="CARD_NUMBER" data-placeholder="Card Number"></div>
+								<div class="payarc-row-2">
+									<div id="pa-card-exp" data-payarc="EXP" data-placeholder="MM/YY"></div>
+									<div id="pa-card-cvv" data-payarc="CVV" data-placeholder="CVV"></div>
+									<div id="pa-card-zip" data-payarc="ZIP" data-placeholder="ZIP"></div>
+								</div>
 							</div>
-						</div>
-						<div class="col-md-3 col-25-bn">
-							<div class="form-group">
-								<label for="expiry">Expiry<small style="color: red">*</small></label> <input autocomplete="off" class="form-control" id="expiry" placeholder="MM/YY" type="text" maxlength="5" onkeyup="formatString(event);">
-							</div>
-						</div>
-						<div class="col-md-3 col-25-bn">
-							<div class="form-group">
-								<label for="cvv">CVV<small style="color: red">*</small></label> <input autocomplete="off" class="form-control" id="cvv" placeholder="CVV" type="text" maxlength="5">
-							</div>
-						</div>
-						<div class="col-md-3 col-50-bn">
-							<div class="form-group">
-								<label for="zip">Zip<small style="color: red">*</small></label> <input autocomplete="off" class="form-control" id="zip" type="text">
-							</div>
+							<div class="ccNotValid" style="display: none;">We couldn&rsquo;t verify this card &mdash; please check the number and expiry date.</div>
+							<button type="button" id="initiate-payment" style="display:none;"></button>
 						</div>
 					</div>
 					
@@ -918,6 +745,13 @@ if($test) {
 							</div>
 						</div>
 					</div>
+					<?php if($getUserID != "") { ?>
+					<div class="row">
+						<div class="col-md text-center mt-3">
+							<label class="save-card-label"><input type="checkbox" id="saveCardChk"> Save my card for faster checkout</label>
+						</div>
+					</div>
+					<?php } ?>
 					<div class="row">
 						<div class="col-md mt-4 mb-2 text-center">
 							<input type="hidden" id="saveCard"/>

@@ -1,0 +1,368 @@
+/* ============================================================
+   The Goral — shared layer for the utility pages:
+   sign-in, sign-up, forgot/reset password, contact, terms,
+   user-dashboard, wallet. Loads AFTER style.css.
+   Same language as the homepage layer: navy ink, gold accents,
+   Syne display + Archivo UI, soft cards on slate.
+   Body classes set per page: .page-auth, .page-form,
+   .page-legal, .page-account (+ .header-light on the nav band).
+   ============================================================ */
+
+:root {
+  --s-ink: #182232;
+  --s-text: #3a4456;
+  --s-muted: #8a93a3;
+  --s-slate: #f2f4f8;
+  --s-line: #e8ecf2;
+  --s-gold: #ffcc64;
+  --s-amber: #ec8e37;
+  --s-gold-dark: #d98b2b;
+}
+
+/* ---------------- PAGE BACKGROUNDS ---------------- */
+body.page-auth,
+body.page-form { background: var(--s-slate); }
+body.page-account { background: #f8f9fb; }
+body.page-legal { background: #ffffff; }
+
+/* ---------------- AUTH HEADER (logo + tabs) ---------------- */
+.page-auth .login-container,
+.page-form .login-container,
+.page-legal .login-container {
+  background: transparent;
+  padding-top: 18px;
+  padding-bottom: 0;
+}
+.page-auth .signup-logo,
+.page-legal .signup-logo { margin-top: 26px; margin-bottom: 20px; }
+.page-auth .signup-logo img,
+.page-legal .signup-logo img { height: 64px; }
+
+/* The account/login switcher: a centered segmented control,
+   not two half-screen bars. */
+.signup-menu {
+  max-width: min(380px, calc(100% - 32px));
+  margin: 0 auto 24px;
+  padding: 5px;
+  background: #e7ebf2;
+  border-radius: 999px;
+}
+.signup-menu .row { display: flex; flex-wrap: nowrap; margin: 0; }
+.signup-menu .col-md { width: 50%; flex: 1; padding: 0; }
+.signup-menu a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  border-radius: 999px;
+  font-family: "Archivo";
+  font-size: 14px;
+  font-weight: 700;
+  color: #5a6372;
+  white-space: nowrap;
+}
+.signup-menu a:hover {
+  width: auto;
+  height: 36px;
+  background: #ffffff;
+  border: 0;
+  color: #182232;
+}
+.signup-menu .menu-active,
+.signup-menu .menu-active:hover {
+  width: auto;
+  height: 36px;
+  background: linear-gradient(180deg, var(--s-gold) 0%, var(--s-amber) 100%);
+  border: 0;
+  color: #554348;
+}
+
+/* ---------------- THE FORM CARD ---------------- */
+.form-signup {
+  width: 100%;
+  max-width: 560px;
+  padding: 32px 36px 36px;
+  background: #ffffff;
+  border: 1px solid var(--s-line);
+  border-radius: 18px;
+  box-shadow: 0 18px 44px -18px rgba(24, 34, 50, 0.18);
+  margin-bottom: 44px;
+}
+.form-title {
+  font-family: "Syne";
+  font-weight: 700;
+  font-size: 25px;
+  color: var(--s-ink);
+}
+.form-subtitle { font-family: "Archivo"; font-weight: 500; font-size: 14px; margin-top: 8px; }
+.form-subtitle a { color: var(--s-gold-dark); font-weight: 700; }
+.form-subtitle a:hover { color: var(--s-amber); }
+
+.form-signup input,
+.form-signup textarea {
+  margin-top: 14px;
+  padding: 11px 13px;
+  font-family: "Archivo";
+  font-size: 14px;
+  color: var(--s-ink);
+  border: 1px solid #dbe1ea;
+  border-radius: 10px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.form-signup input::placeholder,
+.form-signup textarea::placeholder {
+  font-family: "Archivo";
+  font-size: 14px;
+  color: #a7afbc;
+}
+.form-signup input:focus,
+.form-signup textarea:focus {
+  outline: none;
+  border-color: var(--s-gold);
+  box-shadow: 0 0 0 3px rgba(236, 142, 55, 0.16);
+}
+
+.rm input, .tos input { accent-color: var(--s-amber); }
+.rm span, .tos span { font-family: "Archivo"; font-size: 12.5px; color: #5a6372; }
+.tos span a { color: var(--s-gold-dark); }
+
+.btnSignup {
+  width: 100%;
+  max-width: 100%;
+  height: 46px;
+  margin-top: 22px;
+  border: 0;
+  border-radius: 999px;
+  font-size: 16px;
+  color: #554348;
+  box-shadow: 0 14px 28px -12px rgba(236, 142, 55, 0.5);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.btnSignup:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 34px -12px rgba(236, 142, 55, 0.6);
+}
+
+.forgot { margin-top: 18px; }
+.forgot a {
+  font-family: "Archivo";
+  font-weight: 600;
+  font-size: 13px;
+  color: #5a6372;
+  border-bottom: 1px solid #c9d0db;
+  padding-bottom: 2px;
+}
+.forgot a:hover { color: var(--s-gold-dark); border-bottom-color: var(--s-gold-dark); }
+
+.contact-alt {
+  margin-top: 18px;
+  text-align: center;
+  font-family: "Archivo";
+  font-size: 13px;
+  color: var(--s-muted);
+}
+.contact-alt a { color: var(--s-gold-dark); font-weight: 700; text-decoration: none; }
+.contact-alt a:hover { color: var(--s-amber); }
+
+/* Contact: tidy the dark nav band above the card */
+.page-form .navbar { margin-bottom: 0; padding-bottom: 24px; }
+.page-form .form-signup { margin-top: 40px; }
+.page-form .form-title { margin-bottom: 6px; }
+
+/* ---------------- ACCOUNT PAGES (dashboard / wallet) ---------------- */
+.page-account .header-light {
+  background: #ffffff;
+  border-bottom: 1px solid var(--s-line);
+}
+
+/* light variant of the desktop nav pill (white header pages) */
+@media (min-width: 992px) {
+  .page-account #navbarNav .navbar-nav {
+    background: #f1f3f7;
+    border-color: #e4e8ef;
+  }
+  .page-account #navbarNav .navbar-nav .nav-link { color: #46536b; }
+  .page-account #navbarNav .navbar-nav .nav-link:hover { color: #182232; }
+  .page-account #navbarNav .navbar-nav .nav-link.active {
+    background: linear-gradient(180deg, var(--s-gold) 0%, var(--s-amber) 100%);
+    color: #54380e !important;
+  }
+}
+.page-account .navbar { padding-top: 26px; }
+.page-account .navbar a { color: #46536b; font-size: 15px; }
+.page-account .navbar a:hover { color: var(--s-gold-dark); }
+.page-account .active { color: var(--s-gold-dark) !important; }
+
+.page-account .page-head {
+  /* undo the homepage pot h1 styling (flex-centered, padded) */
+  display: block;
+  justify-content: flex-start;
+  letter-spacing: 0;
+  padding: 0;
+  font-family: "Syne";
+  font-weight: 700;
+  font-size: 27px;
+  color: var(--s-ink);
+  margin: 30px 0 2px;
+}
+.page-account .page-sub {
+  font-family: "Archivo";
+  font-size: 13.5px;
+  color: var(--s-muted);
+  margin: 0;
+}
+
+.page-account .title-dash {
+  font-family: "Archivo";
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  color: var(--s-muted);
+  margin-top: 34px;
+  margin-bottom: 4px;
+}
+
+.page-account .card-dash {
+  width: 100%;
+  height: auto; /* the old fixed 123px left a slab of dead space */
+  margin-top: 12px;
+  padding: 16px 18px;
+  background: #ffffff;
+  border: 1px solid var(--s-line);
+  border-radius: 14px;
+  box-shadow: 0 12px 28px -20px rgba(24, 34, 50, 0.25);
+}
+/* minimal tiles: number + label, no clip-art icons */
+.page-account .card-dash .col-md-3 { display: none; }
+.page-account .card-dash span { font-size: 22px; letter-spacing: 0; color: var(--s-ink); }
+.page-account .card-dash p { font-size: 12.5px; font-weight: 600; color: var(--s-muted); margin-bottom: 0; margin-top: 2px; }
+
+/* dashboard table empty rows */
+.page-account .empty-cards {
+  color: var(--s-muted);
+  font-size: 13.5px;
+  padding: 24px 10px !important;
+}
+.page-account .empty-cards a { color: var(--s-gold-dark); font-weight: 700; }
+
+/* wallet with no cards: one quiet line, no table skeleton */
+.page-account .empty-state {
+  max-width: 680px;
+  margin-top: 14px;
+  margin-bottom: 10px;
+  padding: 26px 20px;
+  background: #ffffff;
+  border: 1px dashed #d4dae4;
+  border-radius: 12px;
+  text-align: center;
+  font-family: "Archivo";
+  font-size: 13.5px;
+  color: var(--s-muted);
+}
+.page-account .tbl-card { max-width: 680px; }
+
+.page-account .btn-filter {
+  font-family: "Archivo";
+  font-size: 12.5px !important;
+  font-weight: 600;
+  color: #46536b;
+  background: #ffffff !important;
+  border: 1px solid #dbe1ea;
+  border-radius: 999px;
+  padding: 6px 16px;
+}
+
+/* Tables (raffle history / saved cards) */
+.page-account #customers,
+.page-account .tbl-card {
+  background: #ffffff;
+  border: 1px solid var(--s-line);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-top: 14px;
+}
+.page-account #customers th,
+.page-account .tbl-card th {
+  font-family: "Archivo";
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--s-muted);
+  background: #fafbfd;
+  border-bottom: 1px solid var(--s-line);
+  padding: 12px 10px;
+}
+.page-account #customers td,
+.page-account .tbl-card td {
+  padding: 13px 10px;
+  font-family: "Archivo";
+  font-size: 14px;
+  color: var(--s-text);
+  border-bottom: 1px solid #f0f2f6;
+}
+.page-account #customers tr:nth-child(even) { background-color: #ffffff; }
+.page-account #customers tr:hover,
+.page-account .tbl-card tr:hover { background-color: #f6f8fb; }
+.page-account #customers a { color: var(--s-text); text-decoration: none; }
+.page-account .load-more-raffle { color: var(--s-muted); cursor: pointer; }
+
+/* Wallet extras */
+.page-account .btn-add-card {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  padding: 10px 24px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--s-gold) 0%, var(--s-amber) 100%);
+  font-family: "Archivo";
+  font-size: 14px;
+  font-weight: 700;
+  color: #554348;
+  box-shadow: 0 12px 24px -10px rgba(236, 142, 55, 0.5);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.page-account .btn-add-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 30px -10px rgba(236, 142, 55, 0.6);
+}
+.page-account .delete-card { font-size: 13px; border: 1px solid #dbe1ea; border-radius: 8px; }
+
+/* ---------------- LEGAL ---------------- */
+.page-legal .container {
+  max-width: 800px;
+  font-family: "Inter";
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--s-text);
+  padding-bottom: 50px;
+}
+
+/* ---------------- FOOTER (same rhythm as the other layers) ---------------- */
+.footer { padding-top: 44px; padding-bottom: 28px; }
+.text-desc {
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.7;
+}
+
+/* ---------------- MOBILE (keep it as good as it is) ---------------- */
+@media (max-width: 575px) {
+  .form-signup {
+    width: calc(100% - 32px);
+    margin-left: auto;
+    margin-right: auto;
+    padding: 22px 18px 26px;
+    margin-bottom: 28px;
+  }
+  .page-auth .signup-logo img,
+  .page-legal .signup-logo img { height: 52px; }
+  .form-title { font-size: 20px; }
+  .btnSignup { height: 42px; font-size: 15px; }
+  .page-account .card-dash { margin-top: 10px; padding: 14px; }
+  .page-account .card-dash span { font-size: 20px; }
+  .page-account .title-dash { margin-top: 22px; font-size: 12px; }
+  .page-account .img-card { text-align: center; float: none; margin-top: 18px; }
+  .page-account .img-card img { width: 100%; max-width: 320px; height: auto; }
+}

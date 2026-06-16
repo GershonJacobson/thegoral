@@ -3,7 +3,14 @@ if(isset( $_SERVER['HTTP_X_REQUESTED_WITH']) && ($_SERVER['HTTP_X_REQUESTED_WITH
 	session_start();
 	require("../../config/session.php");
 
-	$filter = $_POST['filter'];
+	if(!in_array((int)$getUserRole, [1, 3], true)) {
+		http_response_code(403);
+		echo json_encode(["result" => "forbidden"]);
+		exit;
+	}
+
+
+	$filter = $_POST['filter'] ?? '';
 
 	if($filter == "" || $filter == "at") {
 		$qTotalEarnings = mysqli_query($con, "
